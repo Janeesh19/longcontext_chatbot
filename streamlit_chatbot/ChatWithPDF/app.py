@@ -10,7 +10,7 @@ from htmlTemplates import css, bot_template, user_template
 import os
 
 # Retrieve the API key from environment variables or Streamlit secrets
-api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
+api_key = st.secrets.get("OPENAI_API_KEY")
 if not api_key:
     st.error("OpenAI API key not found. Please configure it securely.")
 else:
