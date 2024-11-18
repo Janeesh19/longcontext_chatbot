@@ -9,7 +9,12 @@ from langchain.chains import ConversationalRetrievalChain
 from htmlTemplates import css, bot_template, user_template
 import os
 
-os.environ["OPENAI_API_KEY"] = "sk-proj-sYbSeCK97ZGLnwrygP4xT3BlbkFJIq4cEuBt1nbYNes7msFW"
+# Retrieve the API key from environment variables or Streamlit secrets
+api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
+if not api_key:
+    st.error("OpenAI API key not found. Please configure it securely.")
+else:
+    os.environ["OPENAI_API_KEY"] = api_key
 
 
 def get_pdf_text(pdf_docs):
@@ -27,6 +32,8 @@ def get_text_chunks(text):
     )
     chunks = text_splitter.split_text(text)
     return chunks
+
+
 def get_vectorstore(text_chunks):
     embeddings = OpenAIEmbeddings()
     vectorstore = FAISS.from_texts(texts=text_chunks, embedding=embeddings)
@@ -57,6 +64,7 @@ def handle_userinput(user_question):
                 bot_template.replace("{{MSG}}", message.content), unsafe_allow_html=True
             )
 
+
 def main():
     st.set_page_config(page_title="Chat with PDF :books:", page_icon=":books:")
     st.write(css, unsafe_allow_html=True)
@@ -78,18 +86,18 @@ def main():
         )
         if st.button("Add Data"):
             with st.spinner("Adding Data..."):
-                # get pdf text
+                # Get pdf text
                 raw_text = get_pdf_text(pdf_docs)
 
-                # get the text chunks
+                # Get the text chunks
                 text_chunks = get_text_chunks(raw_text)
 
-                # create vector store
+                # Create vector store
                 vectorstore = get_vectorstore(text_chunks)
 
-                # create conversation chain
+                # Create conversation chain
                 st.session_state.conversation = get_conversation_chain(vectorstore)
 
 
 if __name__ == "__main__":
-    main()            
+    main()
