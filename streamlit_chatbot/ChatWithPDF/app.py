@@ -122,7 +122,7 @@ def main():
         st.subheader("Chat Sessions")
 
         # Dropdown for model selection
-        available_models = ["gpt-3.5-turbo", "gpt-4", "gpt-2.5"]
+        available_models = ["gpt-3", "gpt-3.5-turbo", "gpt-4"]
         selected_model = st.selectbox("Select GPT Model", available_models, key="model_selection")
 
         # If a new model is selected, start a new chat
