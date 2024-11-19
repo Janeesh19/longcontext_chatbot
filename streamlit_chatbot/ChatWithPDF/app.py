@@ -103,7 +103,7 @@ def main():
     if st.button("Clear Chat"):
         st.session_state.chat_history = None  # Reset chat history
         st.session_state.clear_input = True  # Trigger clearing the input box
-        st.success("Chat has been cleared!")
+        st.success("Chat has been cleared!.Please click on clear chat button")
 
 if __name__ == "__main__":
     main()
