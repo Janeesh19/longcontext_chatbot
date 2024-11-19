@@ -118,15 +118,25 @@ def main():
     # Sidebar for sessions
     with st.sidebar:
         st.subheader("Chat Sessions")
-        for session_name in st.session_state.sessions:
-            if st.button(session_name):  # Load a session when clicked
-                st.session_state.current_session = session_name
-                st.session_state.chat_history = st.session_state.sessions[session_name]
+
+        # List all existing sessions
+        for session_name in list(st.session_state.sessions.keys()):
+            col1, col2 = st.columns([3, 1])  # Add a button next to each session name
+            with col1:
+                if st.button(session_name):  # Load a session when clicked
+                    st.session_state.current_session = session_name
+                    st.session_state.chat_history = st.session_state.sessions[session_name].copy()
+            with col2:
+                if st.button("❌", key=f"delete_{session_name}"):  # Delete button
+                    del st.session_state.sessions[session_name]
+                    if session_name == st.session_state.current_session:
+                        st.session_state.current_session = None
+                        st.session_state.chat_history = []
 
         # Button to create a new session
         if st.button("New Chat"):
             new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
-            st.session_state.sessions[new_session_name] = []
+            st.session_state.sessions[new_session_name] = []  # Initialize an empty chat history for this session
             st.session_state.current_session = new_session_name
             st.session_state.chat_history = []
 
@@ -152,7 +162,7 @@ def main():
 
             # Save to the current session
             if st.session_state.current_session:
-                st.session_state.sessions[st.session_state.current_session] = st.session_state.chat_history
+                st.session_state.sessions[st.session_state.current_session] = st.session_state.chat_history.copy()
         else:
             st.warning("Please enter a valid question.")
 
