@@ -107,8 +107,8 @@ def main():
         st.session_state.chat_history = []
     if "current_question" not in st.session_state:
         st.session_state.current_question = ""
-    if "clear_trigger" not in st.session_state:
-        st.session_state.clear_trigger = False
+    if "temp_input" not in st.session_state:
+        st.session_state.temp_input = ""
 
     st.header("Chat with PDF :books:")
 
@@ -118,26 +118,30 @@ def main():
     )
 
     # Input box for user's question with Send button
-    if st.session_state.clear_trigger:
-        temp_user_input = ""
-        st.session_state.clear_trigger = False
-    else:
-        temp_user_input = st.session_state.get("current_question", "")
-
-    col1, col2 = st.columns([4, 1])
+    col1, col2 = st.columns([4, 1])  # Split space for input and button
     with col1:
         user_input = st.text_input(
-            "Ask your question:", value=temp_user_input, key="user_input"
+            "Ask your question:",
+            value=st.session_state.temp_input,  # Use session state to manage input value
+            key="user_input",  # Unique key for the widget
         )
     with col2:
-        send_button = st.button("Send")
+        send_button = st.button("Send")  # Button to submit the question
 
+    # Process the input when "Send" is clicked
     if send_button:
-        if user_input.strip():
+        if user_input.strip():  # Ensure the input is not empty or whitespace
+            # Save the current question in session state
             st.session_state.current_question = user_input.strip()
+
+            # Add the user's question to chat history
             st.session_state.chat_history.append({"role": "user", "content": st.session_state.current_question})
+
+            # Process the question
             handle_userinput(st.session_state.current_question, selected_model, None)
-            st.session_state.clear_trigger = True
+
+            # Clear the input field dynamically
+            st.session_state.temp_input = ""  # Reset the input box
         else:
             st.warning("Please enter a valid question.")
 
