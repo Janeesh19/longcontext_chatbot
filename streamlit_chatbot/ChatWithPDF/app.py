@@ -62,15 +62,20 @@ def main():
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = None
-    if "user_question" not in st.session_state:
-        st.session_state.user_question = ""
+    if "clear_input" not in st.session_state:
+        st.session_state.clear_input = False  # Tracks when to clear the input field
 
     st.header("Chat with PDF :books:")
 
-    # Text input for user's question, bound to session state
+    # Handle resetting of the input field dynamically
+    if st.session_state.clear_input:
+        st.session_state.user_question_temp = ""  # Reset the temporary input field
+        st.session_state.clear_input = False  # Turn off the reset flag
+
+    # Text input for user's question, uses a temporary key
     user_question = st.text_input(
-        "Ask a question about your documents:", 
-        key="user_question"
+        "Ask a question about your documents:",
+        key="user_question_temp"  # Use a temporary key to avoid direct modification
     )
 
     if user_question:
@@ -97,7 +102,7 @@ def main():
     st.markdown("---")
     if st.button("Clear Chat"):
         st.session_state.chat_history = None  # Reset chat history
-        st.session_state.user_question = ""  # Clear the input box
+        st.session_state.clear_input = True  # Trigger clearing the input box
         st.success("Chat has been cleared!")
 
 if __name__ == "__main__":
