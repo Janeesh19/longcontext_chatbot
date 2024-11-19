@@ -109,6 +109,8 @@ def main():
         st.session_state.chat_history = []
     if "current_question" not in st.session_state:
         st.session_state.current_question = ""
+    if "user_input" not in st.session_state:
+        st.session_state.user_input = ""
 
     st.header("Chat with PDF :books:")
 
@@ -128,7 +130,11 @@ def main():
     # Input box for user's question with Send button
     col1, col2 = st.columns([4, 1])  # Split space for input and button
     with col1:
-        user_input = st.text_input("Ask your question:", key="user_input")  # User input key
+        user_input = st.text_input(
+            "Ask your question:",
+            value=st.session_state.user_input,  # Use session state to preserve input
+            key="user_input",  # This key links the widget to session state
+        )
     with col2:
         send_button = st.button("Send")  # Button to submit the question
 
@@ -143,8 +149,8 @@ def main():
             # Handle the current question
             handle_userinput(st.session_state.current_question, selected_model, None)
 
-            # Clear the input field after processing
-            st.session_state.user_input = ""  # Reset input box state
+            # Clear the input field by resetting session state before the next run
+            st.session_state.user_input = ""
         else:
             st.warning("Please enter a valid question.")
 
@@ -175,7 +181,6 @@ def main():
     if st.button("Clear Chat"):
         st.session_state.chat_history = []  # Clear chat history
         st.experimental_rerun()
-        st.success("Chat has been cleared!")
 
 
 if __name__ == "__main__":
