@@ -75,37 +75,36 @@ def main():
 
     # Add CSS for chat layout with improved background colors
     st.markdown("""
-    <style>
-    .user-message {
-        background-color: #B3E5FC; /* Light Blue for user messages */
-        padding: 8px 12px;
-        border-radius: 12px;
-        text-align: right;
-        margin-left: auto;
-        margin-right: 10px;
-        max-width: 70%;
-        color: #000; /* Black text color */
-        display: inline-block; /* Wrap only the text */
-    }
-    .assistant-message {
-        background-color: #FFECB3; /* Light Yellow for assistant messages */
-        padding: 8px 12px;
-        border-radius: 12px;
-        text-align: left;
-        margin-left: 10px;
-        margin-right: auto;
-        max-width: 70%;
-        color: #000; /* Black text color */
-        display: inline-block; /* Wrap only the text */
-    }
-    .chat-container {
-        display: flex;
-        flex-direction: column;
-        gap: 10px; /* Space between messages */
-    }
-    </style>
-""", unsafe_allow_html=True)
-
+        <style>
+        .user-message {
+            background-color: #B3E5FC; /* Light Blue for user messages */
+            padding: 8px 12px;
+            border-radius: 12px;
+            text-align: left;
+            margin-left: auto; /* Push to the right */
+            margin-right: 10px;
+            max-width: 70%;
+            color: #000; /* Black text color */
+            display: inline-block;
+        }
+        .assistant-message {
+            background-color: #FFECB3; /* Light Yellow for assistant messages */
+            padding: 8px 12px;
+            border-radius: 12px;
+            text-align: left;
+            margin-left: 10px; /* Push to the left */
+            margin-right: auto;
+            max-width: 70%;
+            color: #000; /* Black text color */
+            display: inline-block;
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Space between messages */
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
     # Input box for user's question with Send button
     col1, col2 = st.columns([4, 1])  # Split space for input and button
@@ -142,12 +141,12 @@ def main():
         for message in st.session_state.chat_history:
             if message["role"] == "user":
                 st.markdown(
-                    f'<div class="chat-message user-message">{message["content"]}</div>',
+                    f'<div class="user-message">{message["content"]}</div>',
                     unsafe_allow_html=True,
                 )
             else:
                 st.markdown(
-                    f'<div class="chat-message assistant-message">{message["content"]}</div>',
+                    f'<div class="assistant-message">{message["content"]}</div>',
                     unsafe_allow_html=True,
                 )
         st.markdown('</div>', unsafe_allow_html=True)
