@@ -75,36 +75,41 @@ def main():
 
     # Add CSS for chat layout
     st.markdown("""
-        <style>
-        .user-message {
-            background-color: #FFFFFF; /* Light Blue for user messages */
-            padding: 8px 12px;
-            border-radius: 12px;
-            text-align: left;
-            margin-left: auto; /* Push the message to the right */
-            margin-right: 10px;
-            max-width: 70%;
-            color: #000; /* Black text color */
-            display: block;
-        }
-        .assistant-message {
-            background-color: #D6EAF8; /* Light Yellow for assistant messages */
-            padding: 8px 12px;
-            border-radius: 12px;
-            text-align: left;
-            margin-left: 10px; /* Push the message to the left */
-            margin-right: auto;
-            max-width: 70%;
-            color: #000; /* Black text color */
-            display: block;
-        }
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            gap: 15px; /* Space between messages */
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    <style>
+    .user-message {
+        background-color: #FFFFFF; /* White background for user messages */
+        padding: 8px 12px;
+        border-radius: 12px;
+        text-align: left;
+        margin-left: auto; /* Push the message to the right */
+        margin-right: 10px;
+        margin-bottom: 10px; /* Add space below user message */
+        max-width: 70%;
+        color: #000; /* Black text color */
+        display: block;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    }
+    .assistant-message {
+        background-color: #D6EAF8; /* Light Blue background for assistant messages */
+        padding: 8px 12px;
+        border-radius: 12px;
+        text-align: left;
+        margin-left: 10px; /* Push the message to the left */
+        margin-right: auto;
+        margin-bottom: 15px; /* Add space below assistant message */
+        max-width: 70%;
+        color: #000; /* Black text color */
+        display: block;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    }
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px; /* Space between messages in the container */
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 
     # Input box for user's question with Send button
     col1, col2 = st.columns([4, 1])  # Split space for input and button
