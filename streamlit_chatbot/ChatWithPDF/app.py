@@ -15,18 +15,6 @@ grok_api_key = st.secrets["GROK_API_KEY"]  # Replace with your Grok API key
 
 # Function to call Grok API
 def call_grok(api_key, prompt, max_tokens=300, temperature=0.7):
-    """
-    Function to interact with the Grok API.
-
-    Args:
-        api_key (str): Your Grok API key.
-        prompt (str): The input prompt for the Grok model.
-        max_tokens (int): The maximum number of tokens to generate.
-        temperature (float): Sampling temperature for randomness.
-
-    Returns:
-        str: The generated response from Grok.
-    """
     endpoint = "https://api.grok.ai/v1/completions"  # Replace with actual endpoint
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -39,10 +27,8 @@ def call_grok(api_key, prompt, max_tokens=300, temperature=0.7):
         "temperature": temperature
     }
 
-    # Send the API request
     response = requests.post(endpoint, headers=headers, json=payload)
 
-    # Handle response
     if response.status_code == 200:
         return response.json().get("completion", "")
     else:
@@ -56,9 +42,9 @@ def get_pdf_text(pdf_docs):
         pdf_reader = PdfReader(pdf)
         for page in pdf_reader.pages:
             page_text = page.extract_text()
-            if page_text:  # Ensure page text isn't None
+            if page_text:
                 text += page_text
-    if not text.strip():  # No text extracted
+    if not text.strip():
         st.warning("No readable text was found in the uploaded PDF.")
     return text
 
@@ -121,7 +107,7 @@ def main():
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
+        st.session_state.chat_history = []  # Ensure chat_history is always a list
     if "clear_chat_triggered" not in st.session_state:
         st.session_state.clear_chat_triggered = False
 
