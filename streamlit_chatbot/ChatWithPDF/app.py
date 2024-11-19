@@ -71,8 +71,10 @@ def main():
         st.session_state.current_question = ""
     if "temp_input" not in st.session_state:
         st.session_state.temp_input = ""
-    if "sidebar_history" not in st.session_state:
-        st.session_state.sidebar_history = []  # Store full chat history here
+    if "sessions" not in st.session_state:
+        st.session_state.sessions = {}  # Store all chat sessions (e.g., {"Chat 1": [...]})
+    if "current_session" not in st.session_state:
+        st.session_state.current_session = None  # Track the active session
 
     st.header("Chat with PDF :books:")
 
@@ -113,6 +115,21 @@ def main():
         </style>
     """, unsafe_allow_html=True)
 
+    # Sidebar for sessions
+    with st.sidebar:
+        st.subheader("Chat Sessions")
+        for session_name in st.session_state.sessions:
+            if st.button(session_name):  # Load a session when clicked
+                st.session_state.current_session = session_name
+                st.session_state.chat_history = st.session_state.sessions[session_name]
+
+        # Button to create a new session
+        if st.button("New Chat"):
+            new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
+            st.session_state.sessions[new_session_name] = []
+            st.session_state.current_session = new_session_name
+            st.session_state.chat_history = []
+
     # Input box for user's question with Send button
     col1, col2 = st.columns([4, 1])  # Split space for input and button
     with col1:
@@ -132,6 +149,10 @@ def main():
             handle_userinput(st.session_state.current_question, st.session_state.conversation)
             st.session_state.temp_input = ""  # Reset the input box
             st.session_state["dummy"] = not st.session_state.get("dummy", False)  # Trigger a UI refresh
+
+            # Save to the current session
+            if st.session_state.current_session:
+                st.session_state.sessions[st.session_state.current_session] = st.session_state.chat_history
         else:
             st.warning("Please enter a valid question.")
 
@@ -174,25 +195,6 @@ def main():
                         st.success("PDFs have been processed successfully!")
                 except Exception as e:
                     st.error(f"Failed to process PDFs: {e}")
-
-        # Chat history in the sidebar
-        st.subheader("Chat History")
-        for i, entry in enumerate(st.session_state.sidebar_history):
-            st.write(f"Chat {i + 1} ({entry['timestamp']}):")
-            for msg in entry["messages"]:
-                role = "You" if msg["role"] == "user" else "Assistant"
-                st.write(f"**{role}:** {msg['content']}")
-
-    # Clear Chat button
-    st.markdown("---")
-    if st.button("Clear Chat"):
-        # Move current chat to the sidebar
-        st.session_state.sidebar_history.append({
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "messages": st.session_state.chat_history.copy()
-        })
-        st.session_state.chat_history = []  # Clear chat history
-        st.session_state["dummy"] = not st.session_state.get("dummy", False)  # Trigger a UI refresh
 
 
 if __name__ == "__main__":
