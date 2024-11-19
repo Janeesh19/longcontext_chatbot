@@ -80,7 +80,7 @@ def main():
             background-color: #B3E5FC; /* Light Blue for user messages */
             padding: 8px 12px;
             border-radius: 12px;
-            text-align: left;
+            text-align: right;
             margin-left: auto; /* Push to the right */
             margin-right: 10px;
             max-width: 70%;
