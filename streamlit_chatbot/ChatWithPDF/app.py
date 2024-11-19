@@ -8,7 +8,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 import requests
 
-# Securely load OpenAI and Grok API keys
+# Securely load API keys
 openai_api_key = st.secrets["OPENAI_API_KEY"]  # Replace with your OpenAI API key
 grok_api_key = st.secrets["GROK_API_KEY"]  # Replace with your Grok API key
 
@@ -55,7 +55,11 @@ def get_pdf_text(pdf_docs):
     for pdf in pdf_docs:
         pdf_reader = PdfReader(pdf)
         for page in pdf_reader.pages:
-            text += page.extract_text()
+            page_text = page.extract_text()
+            if page_text:  # Ensure page text isn't None
+                text += page_text
+    if not text.strip():  # No text extracted
+        st.warning("No readable text was found in the uploaded PDF.")
     return text
 
 
@@ -69,6 +73,9 @@ def get_text_chunks(text):
 
 # Get embeddings and create FAISS vectorstore
 def get_vectorstore(text_chunks):
+    if not text_chunks:
+        st.error("No text chunks available for processing. Please upload a valid PDF.")
+        return None
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
     return FAISS.from_texts(texts=text_chunks, embedding=embeddings)
 
@@ -81,8 +88,7 @@ def get_conversation_chain(vectorstore, model_name):
         return ConversationalRetrievalChain.from_llm(
             llm=llm, retriever=vectorstore.as_retriever(), memory=memory
         )
-    else:
-        return None
+    return None
 
 
 # Handle user input based on the selected model
@@ -92,11 +98,17 @@ def handle_userinput(user_question, selected_model, vectorstore):
             st.error("Please upload a PDF and add data before asking questions.")
             return
         response = st.session_state.conversation({"question": user_question})
-        st.session_state.chat_history.append({"role": "assistant", "content": response["answer"]})
+        if response and "answer" in response:
+            st.session_state.chat_history.append({"role": "assistant", "content": response["answer"]})
+        else:
+            st.error("Failed to get a response from GPT.")
     elif selected_model == "Grok":
         try:
             response = call_grok(grok_api_key, user_question)
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
+            if response:
+                st.session_state.chat_history.append({"role": "assistant", "content": response})
+            else:
+                st.error("Grok returned an empty response.")
         except Exception as e:
             st.error(f"Grok API Error: {str(e)}")
 
@@ -126,9 +138,12 @@ def main():
         st.session_state.clear_chat_triggered = False  # Reset the trigger
 
     # Display chat history
-    for message in st.session_state.chat_history:
-        role = "You" if message["role"] == "user" else "Assistant"
-        st.write(f"**{role}:** {message['content']}")
+    if st.session_state.chat_history:
+        for message in st.session_state.chat_history:
+            role = "You" if message["role"] == "user" else "Assistant"
+            st.write(f"**{role}:** {message['content']}")
+    else:
+        st.info("No chat history yet. Start by asking a question!")
 
     # Input box for user's question
     user_question = st.text_input("Ask your question:")
@@ -148,11 +163,14 @@ def main():
             with st.spinner("Processing PDFs..."):
                 try:
                     raw_text = get_pdf_text(pdf_docs)
-                    text_chunks = get_text_chunks(raw_text)
-                    vectorstore = get_vectorstore(text_chunks)
-                    if selected_model == "GPT":
-                        st.session_state.conversation = get_conversation_chain(vectorstore, "GPT")
-                    st.success("PDFs have been processed successfully!")
+                    if not raw_text.strip():
+                        st.error("No readable content found in the uploaded PDFs.")
+                    else:
+                        text_chunks = get_text_chunks(raw_text)
+                        vectorstore = get_vectorstore(text_chunks)
+                        if vectorstore and selected_model == "GPT":
+                            st.session_state.conversation = get_conversation_chain(vectorstore, "GPT")
+                        st.success("PDFs have been processed successfully!")
                 except Exception as e:
                     st.error(f"Failed to process PDFs: {e}")
 
