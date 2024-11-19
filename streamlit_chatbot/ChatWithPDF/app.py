@@ -15,8 +15,8 @@ def extract_text_from_pdf(file):
     return text
 
 def chat_with_gpt(prompt, context):
-    response = openai.chat_completions.create(
-        model='gpt-3.5-turbo',
+    response = openai.ChatCompletion.create(
+        model='gpt-3.5-turbo',  # or 'gpt-4' if you have access
         messages=[
             {"role": "system", "content": "You are an assistant knowledgeable about the uploaded PDF."},
             {"role": "assistant", "content": context},
