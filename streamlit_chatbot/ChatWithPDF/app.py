@@ -6,6 +6,7 @@ from langchain.vectorstores import FAISS
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
+from datetime import datetime
 
 # Securely load OpenAI API key
 openai_api_key = st.secrets["OPENAI_API_KEY"]
@@ -70,46 +71,47 @@ def main():
         st.session_state.current_question = ""
     if "temp_input" not in st.session_state:
         st.session_state.temp_input = ""
+    if "sidebar_history" not in st.session_state:
+        st.session_state.sidebar_history = []  # Store full chat history here
 
     st.header("Chat with PDF :books:")
 
     # Add CSS for chat layout
     st.markdown("""
-    <style>
-    .user-message {
-        background-color: #FFFFFF; /* White background for user messages */
-        padding: 8px 12px;
-        border-radius: 12px;
-        text-align: left;
-        margin-left: auto; /* Push the message to the right */
-        margin-right: 10px;
-        margin-bottom: 10px; /* Add space below user message */
-        max-width: 70%;
-        color: #000; /* Black text color */
-        display: block;
-        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-    }
-    .assistant-message {
-        background-color: #D6EAF8; /* Light Blue background for assistant messages */
-        padding: 8px 12px;
-        border-radius: 12px;
-        text-align: left;
-        margin-left: 10px; /* Push the message to the left */
-        margin-right: auto;
-        margin-bottom: 15px; /* Add space below assistant message */
-        max-width: 70%;
-        color: #000; /* Black text color */
-        display: block;
-        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-    }
-    .chat-container {
-        display: flex;
-        flex-direction: column;
-        gap: 10px; /* Space between messages in the container */
-    }
-    </style>
-""", unsafe_allow_html=True)
-
+        <style>
+        .user-message {
+            background-color: #FFFFFF; /* White background for user messages */
+            padding: 8px 12px;
+            border-radius: 12px;
+            text-align: left;
+            margin-left: auto; /* Push the message to the right */
+            margin-right: 10px;
+            margin-bottom: 10px; /* Add space below user message */
+            max-width: 70%;
+            color: #000; /* Black text color */
+            display: block;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+        }
+        .assistant-message {
+            background-color: #D6EAF8; /* Light Blue background for assistant messages */
+            padding: 8px 12px;
+            border-radius: 12px;
+            text-align: left;
+            margin-left: 10px; /* Push the message to the left */
+            margin-right: auto;
+            margin-bottom: 15px; /* Add space below assistant message */
+            max-width: 70%;
+            color: #000; /* Black text color */
+            display: block;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Space between messages in the container */
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
     # Input box for user's question with Send button
     col1, col2 = st.columns([4, 1])  # Split space for input and button
@@ -173,9 +175,22 @@ def main():
                 except Exception as e:
                     st.error(f"Failed to process PDFs: {e}")
 
+        # Chat history in the sidebar
+        st.subheader("Chat History")
+        for i, entry in enumerate(st.session_state.sidebar_history):
+            st.write(f"Chat {i + 1} ({entry['timestamp']}):")
+            for msg in entry["messages"]:
+                role = "You" if msg["role"] == "user" else "Assistant"
+                st.write(f"**{role}:** {msg['content']}")
+
     # Clear Chat button
     st.markdown("---")
     if st.button("Clear Chat"):
+        # Move current chat to the sidebar
+        st.session_state.sidebar_history.append({
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "messages": st.session_state.chat_history.copy()
+        })
         st.session_state.chat_history = []  # Clear chat history
         st.session_state["dummy"] = not st.session_state.get("dummy", False)  # Trigger a UI refresh
 
