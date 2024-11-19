@@ -144,7 +144,9 @@ def main():
 
             # Clear the input field dynamically
             st.session_state.temp_input = ""  # Reset the input box
-            st.experimental_rerun()  # Force a rerun to update the UI
+
+            # Trigger a rerun by updating query params
+            st.experimental_set_query_params(dummy=1)
         else:
             st.warning("Please enter a valid question.")
 
@@ -182,7 +184,7 @@ def main():
     st.markdown("---")
     if st.button("Clear Chat"):
         st.session_state.chat_history = []  # Clear chat history
-        st.experimental_rerun()
+        st.experimental_set_query_params(dummy=1)  # Trigger a rerun
 
 
 if __name__ == "__main__":
