@@ -6,32 +6,9 @@ from langchain.vectorstores import FAISS
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
-import requests
 
-# Securely load API keys
+# Securely load OpenAI API key
 openai_api_key = st.secrets["OPENAI_API_KEY"]
-grok_api_key = st.secrets["GROK_API_KEY"]
-
-# Function to call Grok API
-def call_grok(api_key, prompt, max_tokens=300, temperature=0.7):
-    endpoint = "https://api.grok.ai/v1/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "prompt": prompt,
-        "model": "grok-v1",
-        "max_tokens": max_tokens,
-        "temperature": temperature
-    }
-
-    try:
-        response = requests.post(endpoint, headers=headers, json=payload, timeout=10)
-        response.raise_for_status()  # Raise HTTPError for bad responses (4xx and 5xx)
-        return response.json().get("completion", "")
-    except requests.exceptions.RequestException as e:
-        raise Exception(f"Grok API Error: {str(e)}")
 
 # Function to process PDFs and extract text
 def get_pdf_text(pdf_docs):
@@ -70,25 +47,15 @@ def get_conversation_chain(vectorstore):
     )
 
 # Handle user input
-def handle_userinput(user_question, selected_model, vectorstore):
-    if selected_model == "GPT":
-        if not st.session_state.conversation:
-            st.error("Please upload a PDF and add data before asking questions.")
-            return
-        response = st.session_state.conversation({"question": user_question})
-        if response and "answer" in response:
-            st.session_state.chat_history.append({"role": "assistant", "content": response["answer"]})
-        else:
-            st.error("Failed to get a response from GPT.")
-    elif selected_model == "Grok":
-        try:
-            response = call_grok(grok_api_key, user_question)
-            if response:
-                st.session_state.chat_history.append({"role": "assistant", "content": response})
-            else:
-                st.error("Grok returned an empty response.")
-        except Exception as e:
-            st.error(str(e))
+def handle_userinput(user_question, vectorstore):
+    if not st.session_state.conversation:
+        st.error("Please upload a PDF and add data before asking questions.")
+        return
+    response = st.session_state.conversation({"question": user_question})
+    if response and "answer" in response:
+        st.session_state.chat_history.append({"role": "assistant", "content": response["answer"]})
+    else:
+        st.error("Failed to get a response from GPT.")
 
 # Main Streamlit application
 def main():
@@ -105,11 +72,6 @@ def main():
         st.session_state.temp_input = ""
 
     st.header("Chat with PDF :books:")
-
-    # Model selection dropdown
-    selected_model = st.selectbox(
-        "Choose a model:", options=["GPT", "Grok"], index=0
-    )
 
     # Input box for user's question with Send button
     col1, col2 = st.columns([4, 1])  # Split space for input and button
@@ -132,7 +94,7 @@ def main():
             st.session_state.chat_history.append({"role": "user", "content": st.session_state.current_question})
 
             # Process the question
-            handle_userinput(st.session_state.current_question, selected_model, None)
+            handle_userinput(st.session_state.current_question, st.session_state.conversation)
 
             # Clear the input field dynamically
             st.session_state.temp_input = ""  # Reset the input box
@@ -164,7 +126,7 @@ def main():
                     else:
                         text_chunks = get_text_chunks(raw_text)
                         vectorstore = get_vectorstore(text_chunks)
-                        if vectorstore and selected_model == "GPT":
+                        if vectorstore:
                             st.session_state.conversation = get_conversation_chain(vectorstore)
                         st.success("PDFs have been processed successfully!")
                 except Exception as e:
