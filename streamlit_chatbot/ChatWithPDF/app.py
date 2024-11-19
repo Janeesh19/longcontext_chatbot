@@ -144,6 +144,7 @@ def main():
 
             # Clear the input field dynamically
             st.session_state.temp_input = ""  # Reset the input box
+            st.experimental_rerun()  # Force a rerun to update the UI
         else:
             st.warning("Please enter a valid question.")
 
