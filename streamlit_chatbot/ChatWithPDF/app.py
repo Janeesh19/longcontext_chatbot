@@ -107,8 +107,6 @@ def main():
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
-    if "rerun_trigger" not in st.session_state:
-        st.session_state.rerun_trigger = 0  # Dummy variable to trigger reruns
 
     st.header("Chat with PDF :books:")
 
@@ -126,19 +124,16 @@ def main():
         st.info("No chat history yet. Start by asking a question!")
 
     # Input box for user's question
-    user_question = st.text_input("Ask your question:", key="user_question")
-    if user_question.strip():  # Ensure it's not empty or whitespace
+    temp_user_question = st.text_input("Ask your question:")  # Temporary input key
+    if temp_user_question.strip():  # Ensure it's not empty or whitespace
         # Add the user's question to chat history
-        st.session_state.chat_history.append({"role": "user", "content": user_question})
+        st.session_state.chat_history.append({"role": "user", "content": temp_user_question})
 
         # Handle the user's question
-        handle_userinput(user_question, selected_model, None)  # Pass vectorstore if GPT
+        handle_userinput(temp_user_question, selected_model, None)
 
-        # Clear the input field after processing
-        st.session_state["user_question"] = ""  # Clear the input field
-
-        # Trigger a rerun to refresh the UI
-        st.session_state.rerun_trigger += 1  # Increment trigger for rerun
+        # Clear the temporary input field
+        st.experimental_set_query_params(dummy=1)  # Trigger a rerun
 
     # Sidebar for uploading documents
     with st.sidebar:
@@ -166,8 +161,8 @@ def main():
     st.markdown("---")
     if st.button("Clear Chat"):
         st.session_state.chat_history = []  # Clear chat history
+        st.experimental_set_query_params(dummy=1)  # Trigger a rerun
         st.success("Chat has been cleared!")
-        st.session_state.rerun_trigger += 1  # Increment to trigger a rerun
 
 
 if __name__ == "__main__":
