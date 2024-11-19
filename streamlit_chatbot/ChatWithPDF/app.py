@@ -26,13 +26,12 @@ def call_grok(api_key, prompt, max_tokens=300, temperature=0.7):
         "temperature": temperature
     }
 
-    response = requests.post(endpoint, headers=headers, json=payload)
-
-    if response.status_code == 200:
+    try:
+        response = requests.post(endpoint, headers=headers, json=payload, timeout=10)
+        response.raise_for_status()  # Raise HTTPError for bad responses (4xx and 5xx)
         return response.json().get("completion", "")
-    else:
-        raise Exception(f"Error {response.status_code}: {response.text}")
-
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Grok API Error: {str(e)}")
 
 # Function to process PDFs and extract text
 def get_pdf_text(pdf_docs):
@@ -47,14 +46,12 @@ def get_pdf_text(pdf_docs):
         st.warning("No readable text was found in the uploaded PDF.")
     return text
 
-
 # Split text into chunks
 def get_text_chunks(text):
     text_splitter = CharacterTextSplitter(
         separator="\n", chunk_size=1000, chunk_overlap=200, length_function=len
     )
     return text_splitter.split_text(text)
-
 
 # Create FAISS vectorstore from text chunks
 def get_vectorstore(text_chunks):
@@ -64,17 +61,13 @@ def get_vectorstore(text_chunks):
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
     return FAISS.from_texts(texts=text_chunks, embedding=embeddings)
 
-
 # Get conversational chain for GPT
-def get_conversation_chain(vectorstore, model_name):
-    if model_name == "GPT":
-        llm = ChatOpenAI(api_key=openai_api_key)
-        memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-        return ConversationalRetrievalChain.from_llm(
-            llm=llm, retriever=vectorstore.as_retriever(), memory=memory
-        )
-    return None
-
+def get_conversation_chain(vectorstore):
+    llm = ChatOpenAI(api_key=openai_api_key)
+    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+    return ConversationalRetrievalChain.from_llm(
+        llm=llm, retriever=vectorstore.as_retriever(), memory=memory
+    )
 
 # Handle user input
 def handle_userinput(user_question, selected_model, vectorstore):
@@ -95,8 +88,7 @@ def handle_userinput(user_question, selected_model, vectorstore):
             else:
                 st.error("Grok returned an empty response.")
         except Exception as e:
-            st.error(f"Grok API Error: {str(e)}")
-
+            st.error(str(e))
 
 # Main Streamlit application
 def main():
@@ -144,9 +136,7 @@ def main():
 
             # Clear the input field dynamically
             st.session_state.temp_input = ""  # Reset the input box
-
-            # Trigger a rerun by updating query params
-            st.experimental_set_query_params(dummy=1)
+            st.experimental_rerun()  # Force a rerun to refresh UI
         else:
             st.warning("Please enter a valid question.")
 
@@ -175,7 +165,7 @@ def main():
                         text_chunks = get_text_chunks(raw_text)
                         vectorstore = get_vectorstore(text_chunks)
                         if vectorstore and selected_model == "GPT":
-                            st.session_state.conversation = get_conversation_chain(vectorstore, "GPT")
+                            st.session_state.conversation = get_conversation_chain(vectorstore)
                         st.success("PDFs have been processed successfully!")
                 except Exception as e:
                     st.error(f"Failed to process PDFs: {e}")
@@ -184,7 +174,7 @@ def main():
     st.markdown("---")
     if st.button("Clear Chat"):
         st.session_state.chat_history = []  # Clear chat history
-        st.experimental_set_query_params(dummy=1)  # Trigger a rerun
+        st.experimental_rerun()  # Force a rerun to refresh UI
 
 
 if __name__ == "__main__":
