@@ -39,8 +39,8 @@ def get_vectorstore(text_chunks):
     return FAISS.from_texts(texts=text_chunks, embedding=embeddings)
 
 # Get conversational chain for GPT
-def get_conversation_chain(vectorstore):
-    llm = ChatOpenAI(api_key=openai_api_key)
+def get_conversation_chain(vectorstore, selected_model):
+    llm = ChatOpenAI(api_key=openai_api_key, model_name=selected_model)
     memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
     return ConversationalRetrievalChain.from_llm(
         llm=llm, retriever=vectorstore.as_retriever(), memory=memory
@@ -75,6 +75,8 @@ def main():
         st.session_state.current_session = None  # Track the active session
     if "user_input" not in st.session_state:
         st.session_state.user_input = ""  # Store the input value dynamically
+    if "selected_model" not in st.session_state:
+        st.session_state.selected_model = "gpt-3.5-turbo"  # Default GPT model
 
     st.header("Chat with PDF :books:")
 
@@ -119,6 +121,18 @@ def main():
     with st.sidebar:
         st.subheader("Chat Sessions")
 
+        # Dropdown for model selection
+        available_models = ["gpt-3.5-turbo", "gpt-4", "gpt-2.5"]
+        selected_model = st.selectbox("Select GPT Model", available_models, key="model_selection")
+
+        # If a new model is selected, start a new chat
+        if selected_model != st.session_state.selected_model:
+            st.session_state.selected_model = selected_model
+            new_session_name = f"{selected_model} - Chat {len(st.session_state.sessions) + 1}"
+            st.session_state.sessions[new_session_name] = []  # Initialize an empty chat history for this session
+            st.session_state.current_session = new_session_name
+            st.session_state.chat_history = []
+
         # List all existing sessions
         for session_name in list(st.session_state.sessions.keys()):
             col1, col2 = st.columns([3, 1])  # Add a button next to each session name
@@ -136,7 +150,7 @@ def main():
 
         # Button to create a new session
         if st.button("New Chat"):
-            new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
+            new_session_name = f"{st.session_state.selected_model} - Chat {len(st.session_state.sessions) + 1}"
             st.session_state.sessions[new_session_name] = []  # Initialize an empty chat history for this session
             st.session_state.current_session = new_session_name
             st.session_state.chat_history = []
@@ -198,7 +212,7 @@ def main():
                         text_chunks = get_text_chunks(raw_text)
                         vectorstore = get_vectorstore(text_chunks)
                         if vectorstore:
-                            st.session_state.conversation = get_conversation_chain(vectorstore)
+                            st.session_state.conversation = get_conversation_chain(vectorstore, st.session_state.selected_model)
                         st.success("PDFs have been processed successfully!")
                 except Exception as e:
                     st.error(f"Failed to process PDFs: {e}")
