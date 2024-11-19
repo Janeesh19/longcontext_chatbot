@@ -77,7 +77,7 @@ def main():
     st.markdown("""
         <style>
         .user-message {
-            background-color: #B3E5FC; /* Light Blue for user messages */
+            background-color: #FFFFFF; /* Light Blue for user messages */
             padding: 8px 12px;
             border-radius: 12px;
             text-align: left;
@@ -88,7 +88,7 @@ def main():
             display: block;
         }
         .assistant-message {
-            background-color: #FFECB3; /* Light Yellow for assistant messages */
+            background-color: #D6EAF8; /* Light Yellow for assistant messages */
             padding: 8px 12px;
             border-radius: 12px;
             text-align: left;
