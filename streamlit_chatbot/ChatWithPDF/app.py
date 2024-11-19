@@ -107,6 +107,8 @@ def main():
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
+    if "current_question" not in st.session_state:
+        st.session_state.current_question = ""
 
     st.header("Chat with PDF :books:")
 
@@ -126,18 +128,22 @@ def main():
     # Input box for user's question with Send button
     col1, col2 = st.columns([4, 1])  # Split space for input and button
     with col1:
-        temp_user_question = st.text_input("Ask your question:")  # Temporary input key
+        user_input = st.text_input("Ask your question:", key="user_input")  # User input key
     with col2:
         send_button = st.button("Send")  # Button to submit the question
 
-    if send_button and temp_user_question.strip():  # Ensure input is valid and button is clicked
+    if send_button and user_input.strip():  # Ensure input is valid and button is clicked
+        # Store the current question in session state
+        st.session_state.current_question = user_input.strip()
+
         # Add the user's question to chat history
-        st.session_state.chat_history.append({"role": "user", "content": temp_user_question})
+        st.session_state.chat_history.append({"role": "user", "content": st.session_state.current_question})
 
-        # Handle the user's question
-        handle_userinput(temp_user_question, selected_model, None)
+        # Handle the current question
+        handle_userinput(st.session_state.current_question, selected_model, None)
 
-        # Trigger a refresh
+        # Clear the current question in session state and refresh
+        st.session_state.current_question = ""
         st.experimental_set_query_params(dummy=1)
 
     # Sidebar for uploading documents
