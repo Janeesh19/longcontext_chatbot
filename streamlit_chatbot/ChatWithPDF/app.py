@@ -57,18 +57,27 @@ def main():
     st.set_page_config(page_title="Chat with PDF :books:", page_icon=":books:")
     st.write(css, unsafe_allow_html=True)
 
+    # Initialize session states
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = None
+    if "user_question" not in st.session_state:
+        st.session_state.user_question = ""
 
     st.header("Chat with PDF :books:")
-    user_question = st.text_input("Ask a question about your documents:")
+    
+    # Text input for user's question, bound to session state
+    user_question = st.text_input(
+        "Ask a question about your documents:", 
+        key="user_question"  # Links the text input to session state
+    )
 
     # Handle Clear Chat button
     if st.button("Clear Chat"):
         st.session_state.conversation = None
         st.session_state.chat_history = None
+        st.session_state.user_question = ""  # Clear the user question input field
         st.success("Chat has been cleared!")
 
     if user_question:
@@ -77,7 +86,8 @@ def main():
     with st.sidebar:
         st.subheader("Your documents")
         pdf_docs = st.file_uploader(
-            "Upload your PDFs here and click on 'Add Data'", accept_multiple_files=True
+            "Upload your PDFs here and click on 'Add Data'", 
+            accept_multiple_files=True
         )
         if st.button("Add Data"):
             with st.spinner("Processing PDFs..."):
@@ -86,6 +96,7 @@ def main():
                     text_chunks = get_text_chunks(raw_text)
                     vectorstore = get_vectorstore(text_chunks)
                     st.session_state.conversation = get_conversation_chain(vectorstore)
+                    st.success("PDFs have been processed successfully!")
                 except Exception as e:
                     st.error(f"Failed to process PDFs: {e}")
 
