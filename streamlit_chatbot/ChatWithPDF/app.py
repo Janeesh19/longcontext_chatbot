@@ -103,14 +103,12 @@ def main():
     st.set_page_config(page_title="Chat with PDF :books:", page_icon=":books:")
 
     # Initialize session states
-    if "conversation" not in st.session_state:
-        st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
     if "current_question" not in st.session_state:
         st.session_state.current_question = ""
-    if "user_input" not in st.session_state:
-        st.session_state.user_input = ""
+    if "clear_trigger" not in st.session_state:
+        st.session_state.clear_trigger = False
 
     st.header("Chat with PDF :books:")
 
@@ -119,6 +117,30 @@ def main():
         "Choose a model:", options=["GPT", "Grok"], index=0
     )
 
+    # Input box for user's question with Send button
+    if st.session_state.clear_trigger:
+        temp_user_input = ""
+        st.session_state.clear_trigger = False
+    else:
+        temp_user_input = st.session_state.get("current_question", "")
+
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        user_input = st.text_input(
+            "Ask your question:", value=temp_user_input, key="user_input"
+        )
+    with col2:
+        send_button = st.button("Send")
+
+    if send_button:
+        if user_input.strip():
+            st.session_state.current_question = user_input.strip()
+            st.session_state.chat_history.append({"role": "user", "content": st.session_state.current_question})
+            handle_userinput(st.session_state.current_question, selected_model, None)
+            st.session_state.clear_trigger = True
+        else:
+            st.warning("Please enter a valid question.")
+
     # Display chat history
     if st.session_state.chat_history:
         for message in st.session_state.chat_history:
@@ -126,61 +148,6 @@ def main():
             st.write(f"**{role}:** {message['content']}")
     else:
         st.info("No chat history yet. Start by asking a question!")
-
-    # Input box for user's question with Send button
-    col1, col2 = st.columns([4, 1])  # Split space for input and button
-    with col1:
-        user_input = st.text_input(
-            "Ask your question:",
-            value=st.session_state.user_input,  # Use session state to preserve input
-            key="user_input",  # This key links the widget to session state
-        )
-    with col2:
-        send_button = st.button("Send")  # Button to submit the question
-
-    if send_button:  # When "Send" button is clicked
-        if user_input.strip():  # Ensure input is valid
-            # Store the current question in session state
-            st.session_state.current_question = user_input.strip()
-
-            # Add the user's question to chat history
-            st.session_state.chat_history.append({"role": "user", "content": st.session_state.current_question})
-
-            # Handle the current question
-            handle_userinput(st.session_state.current_question, selected_model, None)
-
-            # Clear the input field by resetting session state before the next run
-            st.session_state.user_input = ""
-        else:
-            st.warning("Please enter a valid question.")
-
-    # Sidebar for uploading documents
-    with st.sidebar:
-        st.subheader("Your documents")
-        pdf_docs = st.file_uploader(
-            "Upload your PDFs here and click on 'Add Data'",
-            accept_multiple_files=True
-        )
-        if st.button("Add Data"):
-            with st.spinner("Processing PDFs..."):
-                try:
-                    raw_text = get_pdf_text(pdf_docs)
-                    if not raw_text.strip():
-                        st.error("No readable content found in the uploaded PDFs.")
-                    else:
-                        text_chunks = get_text_chunks(raw_text)
-                        vectorstore = get_vectorstore(text_chunks)
-                        if vectorstore and selected_model == "GPT":
-                            st.session_state.conversation = get_conversation_chain(vectorstore, "GPT")
-                        st.success("PDFs have been processed successfully!")
-                except Exception as e:
-                    st.error(f"Failed to process PDFs: {e}")
-
-    # Clear Chat button
-    st.markdown("---")
-    if st.button("Clear Chat"):
-        st.session_state.chat_history = []  # Clear chat history
-        st.experimental_rerun()
 
 
 if __name__ == "__main__":
