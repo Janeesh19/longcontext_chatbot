@@ -6,7 +6,6 @@ from langchain.vectorstores import FAISS
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
-from datetime import datetime
 
 # Securely load OpenAI API key
 openai_api_key = st.secrets["OPENAI_API_KEY"]
@@ -55,6 +54,9 @@ def handle_userinput(user_question, vectorstore):
     response = st.session_state.conversation({"question": user_question})
     if response and "answer" in response:
         st.session_state.chat_history.append({"role": "assistant", "content": response["answer"]})
+        # Save to the current session
+        if st.session_state.current_session:
+            st.session_state.sessions[st.session_state.current_session] = st.session_state.chat_history
     else:
         st.error("Failed to get a response from GPT.")
 
@@ -67,8 +69,6 @@ def main():
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
-    if "current_question" not in st.session_state:
-        st.session_state.current_question = ""
     if "sessions" not in st.session_state:
         st.session_state.sessions = {}  # Store all chat sessions (e.g., {"Chat 1": [...]})
     if "current_session" not in st.session_state:
