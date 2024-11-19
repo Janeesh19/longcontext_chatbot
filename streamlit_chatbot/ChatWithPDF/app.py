@@ -62,22 +62,27 @@ def main():
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = None
-    if "user_question" not in st.session_state:
-        st.session_state.user_question = ""
+    if "clear_input" not in st.session_state:
+        st.session_state.clear_input = False  # New state for clearing input field
 
     st.header("Chat with PDF :books:")
-    
+
+    # Clear input field if requested
+    if st.session_state.clear_input:
+        st.session_state.user_question = ""
+        st.session_state.clear_input = False
+
     # Text input for user's question, bound to session state
     user_question = st.text_input(
         "Ask a question about your documents:", 
-        key="user_question"  # Links the text input to session state
+        key="user_question"  # Key linked to session state
     )
 
     # Handle Clear Chat button
     if st.button("Clear Chat"):
         st.session_state.conversation = None
         st.session_state.chat_history = None
-        st.session_state.user_question = ""  # Clear the user question input field
+        st.session_state.clear_input = True  # Trigger clearing input field
         st.success("Chat has been cleared!")
 
     if user_question:
