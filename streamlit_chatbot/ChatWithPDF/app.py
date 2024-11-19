@@ -9,20 +9,19 @@ from langchain.chains import ConversationalRetrievalChain
 import requests
 
 # Securely load API keys
-openai_api_key = st.secrets["OPENAI_API_KEY"]  # Replace with your OpenAI API key
-grok_api_key = st.secrets["GROK_API_KEY"]  # Replace with your Grok API key
-
+openai_api_key = st.secrets["OPENAI_API_KEY"]
+grok_api_key = st.secrets["GROK_API_KEY"]
 
 # Function to call Grok API
 def call_grok(api_key, prompt, max_tokens=300, temperature=0.7):
-    endpoint = "https://api.grok.ai/v1/completions"  # Replace with actual endpoint
+    endpoint = "https://api.grok.ai/v1/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     payload = {
         "prompt": prompt,
-        "model": "grok-v1",  # Specify the model version (update as needed)
+        "model": "grok-v1",
         "max_tokens": max_tokens,
         "temperature": temperature
     }
@@ -35,7 +34,7 @@ def call_grok(api_key, prompt, max_tokens=300, temperature=0.7):
         raise Exception(f"Error {response.status_code}: {response.text}")
 
 
-# Function to process PDFs
+# Process PDFs to extract text
 def get_pdf_text(pdf_docs):
     text = ""
     for pdf in pdf_docs:
@@ -57,7 +56,7 @@ def get_text_chunks(text):
     return text_splitter.split_text(text)
 
 
-# Get embeddings and create FAISS vectorstore
+# Create a FAISS vectorstore from text chunks
 def get_vectorstore(text_chunks):
     if not text_chunks:
         st.error("No text chunks available for processing. Please upload a valid PDF.")
@@ -77,7 +76,7 @@ def get_conversation_chain(vectorstore, model_name):
     return None
 
 
-# Handle user input based on the selected model
+# Handle user input
 def handle_userinput(user_question, selected_model, vectorstore):
     if selected_model == "GPT":
         if not st.session_state.conversation:
@@ -107,9 +106,9 @@ def main():
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []  # Ensure chat_history is always a list
-    if "clear_chat_triggered" not in st.session_state:
-        st.session_state.clear_chat_triggered = False
+        st.session_state.chat_history = []
+    if "rerun_trigger" not in st.session_state:
+        st.session_state.rerun_trigger = 0  # Dummy variable to trigger reruns
 
     st.header("Chat with PDF :books:")
 
@@ -117,11 +116,6 @@ def main():
     selected_model = st.selectbox(
         "Choose a model:", options=["GPT", "Grok"], index=0
     )
-
-    # Check if Clear Chat was triggered
-    if st.session_state.clear_chat_triggered:
-        st.session_state.chat_history = []  # Clear the chat history
-        st.session_state.clear_chat_triggered = False  # Reset the trigger
 
     # Display chat history
     if st.session_state.chat_history:
@@ -135,8 +129,8 @@ def main():
     user_question = st.text_input("Ask your question:")
     if user_question:
         st.session_state.chat_history.append({"role": "user", "content": user_question})
-        handle_userinput(user_question, selected_model, None)  # Pass vectorstore if GPT
-        st.experimental_rerun()
+        handle_userinput(user_question, selected_model, None)
+        st.session_state.rerun_trigger += 1  # Increment to trigger a rerun
 
     # Sidebar for uploading documents
     with st.sidebar:
@@ -160,12 +154,12 @@ def main():
                 except Exception as e:
                     st.error(f"Failed to process PDFs: {e}")
 
-    # Clear Chat button at the bottom
+    # Clear Chat button
     st.markdown("---")
     if st.button("Clear Chat"):
         st.session_state.chat_history = []  # Clear chat history
+        st.session_state.rerun_trigger += 1  # Increment to trigger a rerun
         st.success("Chat has been cleared!")
-        st.experimental_rerun()
 
 
 if __name__ == "__main__":
