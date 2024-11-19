@@ -132,19 +132,21 @@ def main():
     with col2:
         send_button = st.button("Send")  # Button to submit the question
 
-    if send_button and user_input.strip():  # Ensure input is valid and button is clicked
-        # Store the current question in session state
-        st.session_state.current_question = user_input.strip()
+    if send_button:  # When "Send" button is clicked
+        if user_input.strip():  # Ensure input is valid
+            # Store the current question in session state
+            st.session_state.current_question = user_input.strip()
 
-        # Add the user's question to chat history
-        st.session_state.chat_history.append({"role": "user", "content": st.session_state.current_question})
+            # Add the user's question to chat history
+            st.session_state.chat_history.append({"role": "user", "content": st.session_state.current_question})
 
-        # Handle the current question
-        handle_userinput(st.session_state.current_question, selected_model, None)
+            # Handle the current question
+            handle_userinput(st.session_state.current_question, selected_model, None)
 
-        # Clear the current question in session state and refresh
-        st.session_state.current_question = ""
-        st.experimental_set_query_params(dummy=1)
+            # Clear the input field after processing
+            st.session_state.user_input = ""  # Reset input box state
+        else:
+            st.warning("Please enter a valid question.")
 
     # Sidebar for uploading documents
     with st.sidebar:
@@ -172,7 +174,7 @@ def main():
     st.markdown("---")
     if st.button("Clear Chat"):
         st.session_state.chat_history = []  # Clear chat history
-        st.experimental_set_query_params(dummy=1)  # Trigger a rerun
+        st.experimental_rerun()
         st.success("Chat has been cleared!")
 
 
