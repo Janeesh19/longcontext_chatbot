@@ -73,35 +73,35 @@ def main():
 
     st.header("Chat with PDF :books:")
 
-    # Add CSS for chat layout with improved background colors
+    # Add CSS for chat layout
     st.markdown("""
         <style>
         .user-message {
             background-color: #B3E5FC; /* Light Blue for user messages */
             padding: 8px 12px;
             border-radius: 12px;
-            text-align: right;
-            margin-left: auto; /* Push to the right */
+            text-align: left;
+            margin-left: auto; /* Push the message to the right */
             margin-right: 10px;
             max-width: 70%;
             color: #000; /* Black text color */
-            display: inline-block;
+            display: block;
         }
         .assistant-message {
             background-color: #FFECB3; /* Light Yellow for assistant messages */
             padding: 8px 12px;
             border-radius: 12px;
             text-align: left;
-            margin-left: 10px; /* Push to the left */
+            margin-left: 10px; /* Push the message to the left */
             margin-right: auto;
             max-width: 70%;
             color: #000; /* Black text color */
-            display: inline-block;
+            display: block;
         }
         .chat-container {
             display: flex;
             flex-direction: column;
-            gap: 10px; /* Space between messages */
+            gap: 15px; /* Space between messages */
         }
         </style>
     """, unsafe_allow_html=True)
@@ -120,16 +120,9 @@ def main():
     # Process the input when "Send" is clicked
     if send_button:
         if user_input.strip():  # Ensure the input is not empty or whitespace
-            # Save the current question in session state
             st.session_state.current_question = user_input.strip()
-
-            # Add the user's question to chat history
             st.session_state.chat_history.append({"role": "user", "content": st.session_state.current_question})
-
-            # Process the question
             handle_userinput(st.session_state.current_question, st.session_state.conversation)
-
-            # Clear the input field dynamically
             st.session_state.temp_input = ""  # Reset the input box
             st.session_state["dummy"] = not st.session_state.get("dummy", False)  # Trigger a UI refresh
         else:
