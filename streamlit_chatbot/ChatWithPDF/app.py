@@ -73,6 +73,44 @@ def main():
 
     st.header("Chat with PDF :books:")
 
+    # Add CSS for chat layout
+    st.markdown("""
+        <style>
+        .user-message {
+            background-color: #DCF8C6;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: right;
+            margin-left: auto;
+            margin-right: 10px;
+            max-width: 70%;
+        }
+        .assistant-message {
+            background-color: #F1F1F1;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: left;
+            margin-left: 10px;
+            margin-right: auto;
+            max-width: 70%;
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-container .chat-message {
+            margin: 5px 0;
+            display: flex;
+        }
+        .chat-container .user-message {
+            justify-content: flex-end;
+        }
+        .chat-container .assistant-message {
+            justify-content: flex-start;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     # Input box for user's question with Send button
     col1, col2 = st.columns([4, 1])  # Split space for input and button
     with col1:
@@ -104,9 +142,19 @@ def main():
 
     # Display chat history
     if st.session_state.chat_history:
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
         for message in st.session_state.chat_history:
-            role = "You" if message["role"] == "user" else "Assistant"
-            st.write(f"**{role}:** {message['content']}")
+            if message["role"] == "user":
+                st.markdown(
+                    f'<div class="chat-message user-message">{message["content"]}</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    f'<div class="chat-message assistant-message">{message["content"]}</div>',
+                    unsafe_allow_html=True,
+                )
+        st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.info("No chat history yet. Start by asking a question!")
 
