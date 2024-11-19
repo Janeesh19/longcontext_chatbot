@@ -132,6 +132,7 @@ def main():
                     if session_name == st.session_state.current_session:
                         st.session_state.current_session = None
                         st.session_state.chat_history = []
+                    st.rerun()  # Force an immediate rerun to update the UI
 
         # Button to create a new session
         if st.button("New Chat"):
