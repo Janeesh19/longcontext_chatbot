@@ -73,6 +73,8 @@ def main():
         st.session_state.sessions = {}  # Store all chat sessions (e.g., {"Chat 1": [...]})
     if "current_session" not in st.session_state:
         st.session_state.current_session = None  # Track the active session
+    if "user_input" not in st.session_state:
+        st.session_state.user_input = ""  # Store the input value dynamically
 
     st.header("Chat with PDF :books:")
 
@@ -144,8 +146,8 @@ def main():
     with col1:
         user_input = st.text_input(
             "Ask your question:",
-            value="",  # Set default value to an empty string
-            key="user_input",  # Unique key for the widget
+            value=st.session_state.user_input,  # Dynamically update value
+            key="dynamic_user_input",  # Unique key for the widget
         )
     with col2:
         send_button = st.button("Send")  # Button to submit the question
@@ -156,6 +158,8 @@ def main():
             st.session_state.current_question = user_input.strip()
             st.session_state.chat_history.append({"role": "user", "content": st.session_state.current_question})
             handle_userinput(st.session_state.current_question, st.session_state.conversation)
+            st.session_state.user_input = ""  # Reset the input box dynamically
+            st.rerun()  # Trigger UI refresh
         else:
             st.warning("Please enter a valid question.")
 
