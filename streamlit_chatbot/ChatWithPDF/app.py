@@ -34,7 +34,7 @@ def call_grok(api_key, prompt, max_tokens=300, temperature=0.7):
         raise Exception(f"Error {response.status_code}: {response.text}")
 
 
-# Process PDFs to extract text
+# Function to process PDFs and extract text
 def get_pdf_text(pdf_docs):
     text = ""
     for pdf in pdf_docs:
@@ -56,7 +56,7 @@ def get_text_chunks(text):
     return text_splitter.split_text(text)
 
 
-# Create a FAISS vectorstore from text chunks
+# Create FAISS vectorstore from text chunks
 def get_vectorstore(text_chunks):
     if not text_chunks:
         st.error("No text chunks available for processing. Please upload a valid PDF.")
@@ -126,11 +126,19 @@ def main():
         st.info("No chat history yet. Start by asking a question!")
 
     # Input box for user's question
-    user_question = st.text_input("Ask your question:")
-    if user_question:
+    user_question = st.text_input("Ask your question:", key="user_question")
+    if user_question.strip():  # Ensure it's not empty or whitespace
+        # Add the user's question to chat history
         st.session_state.chat_history.append({"role": "user", "content": user_question})
-        handle_userinput(user_question, selected_model, None)
-        st.session_state.rerun_trigger += 1  # Increment to trigger a rerun
+
+        # Handle the user's question
+        handle_userinput(user_question, selected_model, None)  # Pass vectorstore if GPT
+
+        # Clear the input field after processing
+        st.session_state["user_question"] = ""  # Clear the input field
+
+        # Trigger a rerun to refresh the UI
+        st.session_state.rerun_trigger += 1  # Increment trigger for rerun
 
     # Sidebar for uploading documents
     with st.sidebar:
@@ -158,8 +166,8 @@ def main():
     st.markdown("---")
     if st.button("Clear Chat"):
         st.session_state.chat_history = []  # Clear chat history
-        st.session_state.rerun_trigger += 1  # Increment to trigger a rerun
         st.success("Chat has been cleared!")
+        st.session_state.rerun_trigger += 1  # Increment to trigger a rerun
 
 
 if __name__ == "__main__":
