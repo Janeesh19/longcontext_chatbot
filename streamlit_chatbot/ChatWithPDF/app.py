@@ -73,25 +73,30 @@ def main():
 
     # Input box for user's question with Send button
     col1, col2 = st.columns([4, 1])  # Split space for input and button
+
+    # Temporary variable for user input
+    temp_input = st.session_state.user_input
+
     with col1:
-        user_input = st.text_input(
+        temp_input = st.text_input(
             "Ask your question:",
-            value=st.session_state.user_input,  # Dynamically update value
-            key="user_input",  # Unique key for the widget
-            on_change=None  # Do not tie to another callback
+            value=temp_input,  # Dynamically update value
+            key="user_input_field",  # Unique key for the widget
         )
+
     with col2:
         send_button = st.button("Send")  # Button to submit the question
 
     # Process the input when "Send" is clicked
     if send_button:
-        if st.session_state.user_input.strip():  # Ensure the input is not empty or whitespace
-            user_input = st.session_state.user_input.strip()
-            st.session_state.chat_history.append({"role": "user", "content": user_input})
-            handle_userinput(user_input, st.session_state.conversation)
+        if temp_input.strip():  # Ensure the input is not empty or whitespace
+            user_question = temp_input.strip()
+            st.session_state.chat_history.append({"role": "user", "content": user_question})
+            handle_userinput(user_question, st.session_state.conversation)
+
             # Reset the input box dynamically
-            st.session_state.user_input = ""  # Clear the input field
-            st.rerun()  # Trigger UI refresh
+            st.session_state.user_input = ""  # Clear the stored input
+            st.experimental_set_query_params(dummy=1)  # Trigger a UI refresh
         else:
             st.warning("Please enter a valid question.")
 
@@ -99,9 +104,9 @@ def main():
     if st.session_state.chat_history:
         for message in st.session_state.chat_history:
             if message["role"] == "user":
-                st.write(f"**You:** {message['content']}")
+                st.markdown(f"**You:** {message['content']}")
             else:
-                st.write(f"**Assistant:** {message['content']}")
+                st.markdown(f"**Assistant:** {message['content']}")
     else:
         st.info("No chat history yet. Start by asking a question!")
 
