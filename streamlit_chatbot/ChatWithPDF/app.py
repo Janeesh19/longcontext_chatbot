@@ -69,8 +69,6 @@ def main():
         st.session_state.chat_history = []
     if "current_question" not in st.session_state:
         st.session_state.current_question = ""
-    if "temp_input" not in st.session_state:
-        st.session_state.temp_input = ""
     if "sessions" not in st.session_state:
         st.session_state.sessions = {}  # Store all chat sessions (e.g., {"Chat 1": [...]})
     if "current_session" not in st.session_state:
@@ -146,7 +144,7 @@ def main():
     with col1:
         user_input = st.text_input(
             "Ask your question:",
-            value=st.session_state.temp_input,  # Use session state to manage input value
+            value="",  # Set default value to an empty string
             key="user_input",  # Unique key for the widget
         )
     with col2:
@@ -158,12 +156,6 @@ def main():
             st.session_state.current_question = user_input.strip()
             st.session_state.chat_history.append({"role": "user", "content": st.session_state.current_question})
             handle_userinput(st.session_state.current_question, st.session_state.conversation)
-            st.session_state.temp_input = ""  # Reset the input box
-            st.session_state["dummy"] = not st.session_state.get("dummy", False)  # Trigger a UI refresh
-
-            # Save to the current session
-            if st.session_state.current_session:
-                st.session_state.sessions[st.session_state.current_session] = st.session_state.chat_history.copy()
         else:
             st.warning("Please enter a valid question.")
 
