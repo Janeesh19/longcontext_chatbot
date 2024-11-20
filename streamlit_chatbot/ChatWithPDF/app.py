@@ -45,13 +45,6 @@ creta_context = """
 (Creta E MT Diesel, Fuel Consumption, Fuel Type, Diesel)
 (Creta E MT Diesel, Wheels & Tires, Front Tires, 205/65 R16)
 (Creta E MT Diesel, Wheels & Tires, Rear Tires, 205/65 R16)
-(Creta E MT, Overview, Category, Car)
-(Creta E MT, Overview, Model Name, Creta)
-(Creta E MT, Overview, Seating Capacity, 5)
-(Creta E MT, Engine, Number of cylinders, 4)
-(Creta E MT, Engine, Valves of cylinder, 16)
-(Creta E MT, Engine, Cam Type, DOHC )
-(Creta E MT, Suspension, Front, McPherson Strut with Coil Spring)
 """
 
 # ChatPromptTemplate configuration
