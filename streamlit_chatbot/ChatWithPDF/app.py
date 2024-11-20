@@ -64,6 +64,43 @@ conversation = ConversationChain(llm=llm, memory=memory, prompt=prompt, verbose=
 def main():
     st.set_page_config(page_title="Chat with Sales Coach 🚗", page_icon="🚗")
 
+    # Add custom CSS for chat styling
+    st.markdown("""
+        <style>
+        .user-message {
+            background-color: #FFFFFF; /* White background for user messages */
+            padding: 8px 12px;
+            border-radius: 12px;
+            text-align: left;
+            margin-left: auto; /* Push the message to the right */
+            margin-right: 10px;
+            margin-bottom: 10px; /* Add space below user message */
+            max-width: 70%;
+            color: #000; /* Black text color */
+            display: block;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+        }
+        .assistant-message {
+            background-color: #D6EAF8; /* Light Blue background for assistant messages */
+            padding: 8px 12px;
+            border-radius: 12px;
+            text-align: left;
+            margin-left: 10px; /* Push the message to the left */
+            margin-right: auto;
+            margin-bottom: 15px; /* Add space below assistant message */
+            max-width: 70%;
+            color: #000; /* Black text color */
+            display: block;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Space between messages in the container */
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     # Initialize session states
     if "conversation" not in st.session_state:
         st.session_state.conversation = conversation
@@ -73,6 +110,14 @@ def main():
         st.session_state.user_input = ""
 
     st.header("Chat with Sales Coach 🚗")
+
+    # Add a Clear Chat button
+    clear_chat = st.button("Clear Chat")
+    if clear_chat:
+        # Clear chat history and reset session state
+        st.session_state.chat_history = []
+        st.session_state.user_input = ""
+        st.rerun()
 
     # Input box for user's question
     col1, col2 = st.columns([4, 1])
@@ -95,7 +140,6 @@ def main():
             # Reset user input
             st.session_state.user_input = ""
 
-            # Replace experimental_rerun with st.rerun
             st.rerun()
         else:
             st.warning("Please enter a valid question.")
@@ -108,14 +152,6 @@ def main():
         else:
             st.markdown(f'<div class="assistant-message">{message["content"]}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
-
-  # Add a Clear Chat button
-    clear_chat = st.button("Clear Chat")
-    if clear_chat:
-        # Clear chat history and reset session state
-        st.session_state.chat_history = []
-        st.session_state.user_input = ""
-        st.rerun()
 
 if __name__ == "__main__":
     main()
