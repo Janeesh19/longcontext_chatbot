@@ -74,14 +74,6 @@ def main():
 
     st.header("Chat with Sales Coach 🚗")
 
-    # Add a Clear Chat button
-    clear_chat = st.button("Clear Chat")
-    if clear_chat:
-        # Clear chat history and reset session state
-        st.session_state.chat_history = []
-        st.session_state.user_input = ""
-        st.rerun()
-
     # Input box for user's question
     col1, col2 = st.columns([4, 1])
     with col1:
@@ -116,6 +108,14 @@ def main():
         else:
             st.markdown(f'<div class="assistant-message">{message["content"]}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
+
+  # Add a Clear Chat button
+    clear_chat = st.button("Clear Chat")
+    if clear_chat:
+        # Clear chat history and reset session state
+        st.session_state.chat_history = []
+        st.session_state.user_input = ""
+        st.rerun()
 
 if __name__ == "__main__":
     main()
