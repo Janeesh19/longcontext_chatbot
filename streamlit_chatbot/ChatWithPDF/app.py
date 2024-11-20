@@ -136,7 +136,7 @@ def main():
         # Button to create a new session
         if st.button("New Chat"):
             new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
-            st.session_state.sessions[new_session_name] = []  # Initialize an empty chat history for this session
+            st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
             st.session_state.current_session = new_session_name
             st.session_state.chat_history = []
 
@@ -165,6 +165,17 @@ def main():
         else:
             st.warning("Please enter a valid question.")
 
+    # Add a Clear Chat button
+    clear_chat = st.button("Clear Chat")
+    if clear_chat:
+        if st.session_state.chat_history:
+            new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
+            st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
+        # Clear chat history and reset
+        st.session_state.chat_history = []
+        st.session_state.user_input = ""
+        st.rerun()
+
     # Display chat history
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
     for message in st.session_state.chat_history:
@@ -173,14 +184,6 @@ def main():
         else:
             st.markdown(f'<div class="assistant-message">{message["content"]}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
-
-# Add a Clear Chat button
-    clear_chat = st.button("Clear Chat")
-    if clear_chat:
-        # Clear chat history and reset session state
-        st.session_state.chat_history = []
-        st.session_state.user_input = ""
-        st.rerun()
 
 if __name__ == "__main__":
     main()
