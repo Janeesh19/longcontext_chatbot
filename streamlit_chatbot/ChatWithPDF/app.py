@@ -101,6 +101,32 @@ def main():
         </style>
     """, unsafe_allow_html=True)
 
+     # Sidebar for sessions
+    with st.sidebar:
+        st.subheader("Chat Sessions")
+
+        # List all existing sessions
+        for session_name in list(st.session_state.sessions.keys()):
+            col1, col2 = st.columns([3, 1])  # Add a button next to each session name
+            with col1:
+                if st.button(session_name):  # Load a session when clicked
+                    st.session_state.current_session = session_name
+                    st.session_state.chat_history = st.session_state.sessions[session_name].copy()
+            with col2:
+                if st.button("❌", key=f"delete_{session_name}"):  # Delete button
+                    del st.session_state.sessions[session_name]
+                    if session_name == st.session_state.current_session:
+                        st.session_state.current_session = None
+                        st.session_state.chat_history = []
+                    st.rerun()  # Force an immediate rerun to update the UI
+
+        # Button to create a new session
+        if st.button("New Chat"):
+            new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
+            st.session_state.sessions[new_session_name] = []  # Initialize an empty chat history for this session
+            st.session_state.current_session = new_session_name
+            st.session_state.chat_history = []
+
     # Initialize session states
     if "conversation" not in st.session_state:
         st.session_state.conversation = conversation
