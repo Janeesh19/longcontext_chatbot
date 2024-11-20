@@ -5,7 +5,7 @@ from langchain.chains import ConversationChain
 from langchain.chat_models import ChatOpenAI
 
 # Securely load OpenAI API key
-openai_api_key = "your-api-key-here"  # Replace with your OpenAI API key
+openai_api_key = st.secrets["OPENAI_API_KEY"]  # Replace with your OpenAI API key
 
 # Sales coach prompt and Creta context
 system_prompt = """
