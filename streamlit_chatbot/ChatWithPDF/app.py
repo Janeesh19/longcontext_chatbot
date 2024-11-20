@@ -5,7 +5,7 @@ from langchain.chains import ConversationChain
 from langchain.chat_models import ChatOpenAI
 
 # Securely load OpenAI API key
-openai_api_key = st.secrets["OPENAI_API_KEY"] # Replace with your OpenAI API key
+openai_api_key = st.secrets["OPENAI_API_KEY"]  # Replace with your OpenAI API key
 
 # Sales coach prompt and Creta context
 system_prompt = """
@@ -74,6 +74,14 @@ def main():
 
     st.header("Chat with Sales Coach 🚗")
 
+    # Add a Clear Chat button
+    clear_chat = st.button("Clear Chat")
+    if clear_chat:
+        # Clear chat history and reset session state
+        st.session_state.chat_history = []
+        st.session_state.user_input = ""
+        st.rerun()
+
     # Input box for user's question
     col1, col2 = st.columns([4, 1])
     with col1:
@@ -100,7 +108,7 @@ def main():
         else:
             st.warning("Please enter a valid question.")
 
-    # Display chat history (context is not shown here)
+    # Display chat history
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
     for message in st.session_state.chat_history:
         if message["role"] == "user":
