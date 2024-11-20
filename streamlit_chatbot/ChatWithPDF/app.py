@@ -5,7 +5,7 @@ from langchain.chains import ConversationChain
 from langchain.chat_models import ChatOpenAI
 
 # Securely load OpenAI API key
-openai_api_key = st.secrets["OPENAI_API_KEY"]  # Replace with your OpenAI API key
+openai_api_key = "your-api-key-here"  # Replace with your OpenAI API key
 
 # Sales coach prompt and Creta context
 system_prompt = """
@@ -102,13 +102,13 @@ def main():
             # Reset user input
             st.session_state.user_input = ""
 
-            st.experimental_rerun()
+            # Replace experimental_rerun with st.rerun
+            st.rerun()
         else:
             st.warning("Please enter a valid question.")
 
-    # Display chat in order: context, chat history, current question
+    # Display chat history (context is not shown here)
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-    st.markdown(f'<div class="assistant-message">Context:<br>{creta_context}</div>', unsafe_allow_html=True)
     for message in st.session_state.chat_history:
         if message["role"] == "user":
             st.markdown(f'<div class="user-message">{message["content"]}</div>', unsafe_allow_html=True)
