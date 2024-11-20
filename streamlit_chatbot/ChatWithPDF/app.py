@@ -1,8 +1,4 @@
 import streamlit as st
-from PyPDF2 import PdfReader
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
@@ -10,46 +6,41 @@ from langchain.chains import ConversationalRetrievalChain
 # Securely load OpenAI API key
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 
-# Function to process PDFs and extract text
-def get_pdf_text(pdf_docs):
-    text = ""
-    for pdf in pdf_docs:
-        pdf_reader = PdfReader(pdf)
-        for page in pdf_reader.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text += page_text
-    if not text.strip():
-        st.warning("No readable text was found in the uploaded PDF.")
-    return text
+# Define the sales coach prompt
+SALES_COACH_PROMPT = """
+Act as an expert sales coach. You are job is to answer queries from sales agents to help them selling Hyundai Creta only. Always answer form the context provided. Use the following 7-step framework to guide your responses:
 
-# Split text into chunks
-def get_text_chunks(text):
-    text_splitter = CharacterTextSplitter(
-        separator="\n", chunk_size=1000, chunk_overlap=200, length_function=len
-    )
-    return text_splitter.split_text(text)
+1. Identify the genuine problems or needs the vehicle meets for customers
+2. Acknowledge other competitive vehicles customers may be considering
+3. Describe how the Hyundai Creta ideally improves customers' lives
+4. Present yourself as a trusted advisor aiming to match the right vehicle to each customer
+5. Explain the main benefits and value the Hyundai Creta provides
+6. Provide transparent evidence to back up claims about the vehicle's features
+7. Offer next steps for interested customers to learn more or test drive
 
-# Create FAISS vectorstore from text chunks
-def get_vectorstore(text_chunks):
-    if not text_chunks:
-        st.error("No text chunks available for processing. Please upload a valid PDF.")
-        return None
-    embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-    return FAISS.from_texts(texts=text_chunks, embedding=embeddings)
+Never recommend any other car other than Hyundai Creta.
+If you do not know the answer to a question, simply state so. Focus on being helpful, honest, and customer-oriented in crafting sales coaching advice.
+
+Please provide guidance to the sales agent's questions:
+
+{context}
+
+Question: {question}
+Helpful Answer:
+"""
 
 # Get conversational chain for GPT
-def get_conversation_chain(vectorstore, selected_model):
+def get_conversation_chain(selected_model):
     llm = ChatOpenAI(api_key=openai_api_key, model_name=selected_model)
     memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
     return ConversationalRetrievalChain.from_llm(
-        llm=llm, retriever=vectorstore.as_retriever(), memory=memory
+        llm=llm, memory=memory, input_key="question"
     )
 
 # Handle user input
-def handle_userinput(user_question, vectorstore):
+def handle_userinput(user_question):
     if not st.session_state.conversation:
-        st.error("Please upload a PDF and add data before asking questions.")
+        st.error("Please start a new chat before asking questions.")
         return
     response = st.session_state.conversation({"question": user_question})
     if response and "answer" in response:
@@ -62,7 +53,7 @@ def handle_userinput(user_question, vectorstore):
 
 # Main Streamlit application
 def main():
-    st.set_page_config(page_title="Chat with PDF :books:", page_icon=":books:")
+    st.set_page_config(page_title="Chat with Sales Coach :car:", page_icon=":car:")
 
     # Initialize session states
     if "conversation" not in st.session_state:
@@ -78,7 +69,7 @@ def main():
     if "selected_model" not in st.session_state:
         st.session_state.selected_model = "gpt-3.5-turbo"  # Default GPT model
 
-    st.header("Chat with PDF :books:")
+    st.header("Chat with Sales Coach :car:")
 
     # Add CSS for chat layout
     st.markdown("""
@@ -132,6 +123,7 @@ def main():
             st.session_state.sessions[new_session_name] = []  # Initialize an empty chat history for this session
             st.session_state.current_session = new_session_name
             st.session_state.chat_history = []
+            st.session_state.conversation = get_conversation_chain(selected_model)  # Reset conversation
 
         # List all existing sessions
         for session_name in list(st.session_state.sessions.keys()):
@@ -154,6 +146,7 @@ def main():
             st.session_state.sessions[new_session_name] = []  # Initialize an empty chat history for this session
             st.session_state.current_session = new_session_name
             st.session_state.chat_history = []
+            st.session_state.conversation = get_conversation_chain(st.session_state.selected_model)  # Reset conversation
 
     # Input box for user's question with Send button
     col1, col2 = st.columns([4, 1])  # Split space for input and button
@@ -171,7 +164,7 @@ def main():
         if user_input.strip():  # Ensure the input is not empty or whitespace
             st.session_state.current_question = user_input.strip()
             st.session_state.chat_history.append({"role": "user", "content": st.session_state.current_question})
-            handle_userinput(st.session_state.current_question, st.session_state.conversation)
+            handle_userinput(st.session_state.current_question)
             st.session_state.user_input = ""  # Reset the input box dynamically
             st.rerun()  # Trigger UI refresh
         else:
@@ -194,28 +187,6 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.info("No chat history yet. Start by asking a question!")
-
-    # Sidebar for uploading documents
-    with st.sidebar:
-        st.subheader("Your documents")
-        pdf_docs = st.file_uploader(
-            "Upload your PDFs here and click on 'Add Data'",
-            accept_multiple_files=True
-        )
-        if st.button("Add Data"):
-            with st.spinner("Processing PDFs..."):
-                try:
-                    raw_text = get_pdf_text(pdf_docs)
-                    if not raw_text.strip():
-                        st.error("No readable content found in the uploaded PDFs.")
-                    else:
-                        text_chunks = get_text_chunks(raw_text)
-                        vectorstore = get_vectorstore(text_chunks)
-                        if vectorstore:
-                            st.session_state.conversation = get_conversation_chain(vectorstore, st.session_state.selected_model)
-                        st.success("PDFs have been processed successfully!")
-                except Exception as e:
-                    st.error(f"Failed to process PDFs: {e}")
 
 
 if __name__ == "__main__":
