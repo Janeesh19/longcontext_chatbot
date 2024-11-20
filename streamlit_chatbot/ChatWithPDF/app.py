@@ -3,61 +3,56 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, Sy
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationChain
 from langchain.chat_models import ChatOpenAI
+from PyPDF2 import PdfReader
+from langchain.text_splitter import CharacterTextSplitter
 
 # Securely load OpenAI API key
 openai_api_key = st.secrets["OPENAI_API_KEY"]  # Replace with your OpenAI API key
 
-# Sales coach prompt and Creta context
-system_prompt = """
-Act as an expert sales coach. Your job is to answer queries from sales agents to help them sell Hyundai Creta only. 
-Use the following 7-step framework to guide your responses:
+# Function to extract text from uploaded PDF
+def extract_pdf_text(pdf_files):
+    text = ""
+    for pdf in pdf_files:
+        reader = PdfReader(pdf)
+        for page in reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text
+    if not text.strip():
+        st.warning("No readable text was found in the uploaded PDF.")
+    return text
 
-1. Identify the genuine problems or needs the vehicle meets for customers.
-2. Acknowledge other competitive vehicles customers may be considering.
-3. Describe how the Hyundai Creta ideally improves customers' lives.
-4. Present yourself as a trusted advisor aiming to match the right vehicle to each customer.
-5. Explain the main benefits and value the Hyundai Creta provides.
-6. Provide transparent evidence to back up claims about the vehicle's features.
-7. Offer next steps for interested customers to learn more or test drive.
-
-Never recommend any other car other than Hyundai Creta.
-If you do not know the answer to a question, simply state so. 
-Focus on being helpful, honest, and customer-oriented in crafting sales coaching advice.
-"""
-
-creta_context = """
-(Creta E MT Petrol, Overview, Product Label, 1.5 PL 6MT)
-(Creta E MT Petrol, Engine, Engine Label, 1.5 PL 6MT)
-(Creta E MT Petrol, Engine, Displacement (cc), 1497)
-(Creta E MT Petrol, Engine, Max. Power (ps / rpm), 115 / 6300)
-(Creta E MT Petrol, Engine, Max. Torque (Nm / rpm), 143.8 / 4500)
-(Creta E MT Petrol, Transmission, Transmission Type, 6 Speed MT)
-(Creta E MT Petrol, Fuel Consumption, Fuel Type, Petrol)
-(Creta E MT Petrol, Wheels & Tires, Front Tires, 205/65 R16)
-(Creta E MT Petrol, Wheels & Tires, Rear Tires, 205/65 R16)
-(Creta E MT Diesel, Overview, Product Label, 1.5 DSL 6MT)
-(Creta E MT Diesel, Engine, Engine Label, 1.5 DSL 6MT)
-(Creta E MT Diesel, Engine, Displacement (cc), 1493)
-(Creta E MT Diesel, Engine, Max. Power (ps / rpm), 116 / 4000)
-(Creta E MT Diesel, Engine, Max. Torque (Nm / rpm), 250 / 1500~2750)
-(Creta E MT Diesel, Transmission, Transmission Type, 6 Speed MT)
-(Creta E MT Diesel, Fuel Consumption, Fuel Type, Diesel)
-(Creta E MT Diesel, Wheels & Tires, Front Tires, 205/65 R16)
-(Creta E MT Diesel, Wheels & Tires, Rear Tires, 205/65 R16)
-"""
+# Function to split the text into manageable chunks
+def split_text_into_chunks(text):
+    text_splitter = CharacterTextSplitter(
+        separator="\n", chunk_size=1000, chunk_overlap=200, length_function=len
+    )
+    return text_splitter.split_text(text)
 
 # ChatPromptTemplate configuration
-prompt = ChatPromptTemplate.from_messages([
-    SystemMessagePromptTemplate.from_template(system_prompt),
-    SystemMessagePromptTemplate.from_template(creta_context),
-    MessagesPlaceholder(variable_name="history"),
-    HumanMessagePromptTemplate.from_template("{input}")
-])
+def create_prompt(context):
+    system_prompt = """
+    Act as an expert sales coach. Your job is to answer queries from sales agents to help them sell Hyundai Creta only. 
+    Use the following 7-step framework to guide your responses:
 
-# Chat model and memory
-llm = ChatOpenAI(api_key=openai_api_key, model_name="gpt-3.5-turbo", temperature=0.7)
-memory = ConversationBufferMemory(return_messages=True, memory_key="history")
-conversation = ConversationChain(llm=llm, memory=memory, prompt=prompt, verbose=True)
+    1. Identify the genuine problems or needs the vehicle meets for customers.
+    2. Acknowledge other competitive vehicles customers may be considering.
+    3. Describe how the Hyundai Creta ideally improves customers' lives.
+    4. Present yourself as a trusted advisor aiming to match the right vehicle to each customer.
+    5. Explain the main benefits and value the Hyundai Creta provides.
+    6. Provide transparent evidence to back up claims about the vehicle's features.
+    7. Offer next steps for interested customers to learn more or test drive.
+
+    Never recommend any other car other than Hyundai Creta.
+    If you do not know the answer to a question, simply state so. 
+    Focus on being helpful, honest, and customer-oriented in crafting sales coaching advice.
+    """
+    return ChatPromptTemplate.from_messages([
+        SystemMessagePromptTemplate.from_template(system_prompt),
+        SystemMessagePromptTemplate.from_template(context),
+        MessagesPlaceholder(variable_name="history"),
+        HumanMessagePromptTemplate.from_template("{input}")
+    ])
 
 # Main Streamlit application
 def main():
@@ -102,7 +97,7 @@ def main():
 
     # Initialize session states
     if "conversation" not in st.session_state:
-        st.session_state.conversation = conversation
+        st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
     if "sessions" not in st.session_state:
@@ -114,31 +109,25 @@ def main():
 
     st.header("Chat with Sales Coach 🚗")
 
-    # Sidebar for sessions
+    # Sidebar for document upload
     with st.sidebar:
-        st.subheader("Chat Sessions")
-
-        # List all existing sessions
-        for session_name in list(st.session_state.sessions.keys()):
-            col1, col2 = st.columns([3, 1])  # Add a button next to each session name
-            with col1:
-                if st.button(session_name):  # Load a session when clicked
-                    st.session_state.current_session = session_name
-                    st.session_state.chat_history = st.session_state.sessions[session_name].copy()
-            with col2:
-                if st.button("❌", key=f"delete_{session_name}"):  # Delete button
-                    del st.session_state.sessions[session_name]
-                    if session_name == st.session_state.current_session:
-                        st.session_state.current_session = None
-                        st.session_state.chat_history = []
-                    st.rerun()  # Force an immediate rerun to update the UI
-
-        # Button to create a new session
-        if st.button("New Chat"):
-            new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
-            st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
-            st.session_state.current_session = new_session_name
-            st.session_state.chat_history = []
+        st.subheader("Upload Your Context")
+        pdf_files = st.file_uploader("Upload your PDFs for context", accept_multiple_files=True)
+        if st.button("Process PDFs"):
+            if pdf_files:
+                raw_text = extract_pdf_text(pdf_files)
+                if raw_text.strip():
+                    text_chunks = split_text_into_chunks(raw_text)
+                    full_context = "\n".join(text_chunks)
+                    st.session_state.conversation = ConversationChain(
+                        llm=ChatOpenAI(api_key=openai_api_key, model_name="gpt-3.5-turbo", temperature=0.7),
+                        memory=ConversationBufferMemory(return_messages=True, memory_key="history"),
+                        prompt=create_prompt(full_context),
+                        verbose=True
+                    )
+                    st.success("Context uploaded and processed successfully!")
+                else:
+                    st.error("The uploaded PDFs did not contain any readable content.")
 
     # Input box for user's question
     col1, col2 = st.columns([4, 1])
@@ -153,15 +142,14 @@ def main():
 
     if send_button:
         if user_input.strip():
-            # Run the conversation
-            response = st.session_state.conversation.run({"input": user_input})
-            st.session_state.chat_history.append({"role": "user", "content": user_input})
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
-
-            # Reset user input
-            st.session_state.user_input = ""
-
-            st.rerun()
+            if st.session_state.conversation:
+                response = st.session_state.conversation.run({"input": user_input})
+                st.session_state.chat_history.append({"role": "user", "content": user_input})
+                st.session_state.chat_history.append({"role": "assistant", "content": response})
+                st.session_state.user_input = ""
+                st.rerun()
+            else:
+                st.error("Please upload a PDF to set the context before asking questions.")
         else:
             st.warning("Please enter a valid question.")
 
@@ -171,7 +159,6 @@ def main():
         if st.session_state.chat_history:
             new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
             st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
-        # Clear chat history and reset
         st.session_state.chat_history = []
         st.session_state.user_input = ""
         st.rerun()
