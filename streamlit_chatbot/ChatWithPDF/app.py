@@ -25,7 +25,6 @@ If you do not know the answer to a question, simply state so.
 Focus on being helpful, honest, and customer-oriented in crafting sales coaching advice.
 """
 
-# Replace this variable with the actual context for Hyundai Creta
 creta_context = """
 (Creta E MT Petrol, Overview, Product Label, 1.5 PL 6MT)
 (Creta E MT Petrol, Engine, Engine Label, 1.5 PL 6MT)
@@ -101,7 +100,21 @@ def main():
         </style>
     """, unsafe_allow_html=True)
 
-     # Sidebar for sessions
+    # Initialize session states
+    if "conversation" not in st.session_state:
+        st.session_state.conversation = conversation
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+    if "sessions" not in st.session_state:
+        st.session_state.sessions = {}
+    if "current_session" not in st.session_state:
+        st.session_state.current_session = None
+    if "user_input" not in st.session_state:
+        st.session_state.user_input = ""
+
+    st.header("Chat with Sales Coach 🚗")
+
+    # Sidebar for sessions
     with st.sidebar:
         st.subheader("Chat Sessions")
 
@@ -126,16 +139,6 @@ def main():
             st.session_state.sessions[new_session_name] = []  # Initialize an empty chat history for this session
             st.session_state.current_session = new_session_name
             st.session_state.chat_history = []
-
-    # Initialize session states
-    if "conversation" not in st.session_state:
-        st.session_state.conversation = conversation
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
-    if "user_input" not in st.session_state:
-        st.session_state.user_input = ""
-
-    st.header("Chat with Sales Coach 🚗")
 
     # Input box for user's question
     col1, col2 = st.columns([4, 1])
@@ -170,14 +173,6 @@ def main():
         else:
             st.markdown(f'<div class="assistant-message">{message["content"]}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
-
- # Add a Clear Chat button
-    clear_chat = st.button("Clear Chat")
-    if clear_chat:
-        # Clear chat history and reset session state
-        st.session_state.chat_history = []
-        st.session_state.user_input = ""
-        st.rerun()
 
 if __name__ == "__main__":
     main()
