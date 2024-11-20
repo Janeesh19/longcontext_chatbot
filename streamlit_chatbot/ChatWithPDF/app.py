@@ -100,49 +100,12 @@ def main():
 
     st.header("Chat with Sales Coach 🚗")
 
-    # Add CSS for chat layout
-    st.markdown("""
-        <style>
-        .user-message {
-            background-color: #FFFFFF; /* White background for user messages */
-            padding: 8px 12px;
-            border-radius: 12px;
-            text-align: left;
-            margin-left: auto; /* Push the message to the right */
-            margin-right: 10px;
-            margin-bottom: 10px; /* Add space below user message */
-            max-width: 70%;
-            color: #000; /* Black text color */
-            display: block;
-            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-        }
-        .assistant-message {
-            background-color: #D6EAF8; /* Light Blue background for assistant messages */
-            padding: 8px 12px;
-            border-radius: 12px;
-            text-align: left;
-            margin-left: 10px; /* Push the message to the left */
-            margin-right: auto;
-            margin-bottom: 15px; /* Add space below assistant message */
-            max-width: 70%;
-            color: #000; /* Black text color */
-            display: block;
-            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-        }
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px; /* Space between messages in the container */
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
     # Sidebar for sessions
     with st.sidebar:
         st.subheader("Chat Sessions")
 
         # Dropdown for model selection
-        available_models = ["gpt-3", "gpt-3.5-turbo", "gpt-4"]
+        available_models = ["gpt-3.5-turbo", "gpt-4"]
         selected_model = st.selectbox("Select GPT Model", available_models, key="model_selection")
 
         # If a new model is selected, start a new chat
@@ -167,13 +130,6 @@ def main():
                         st.session_state.current_session = None
                         st.session_state.chat_history = []
                     st.rerun()  # Force an immediate rerun to update the UI
-
-        # Button to create a new session
-        if st.button("New Chat"):
-            new_session_name = f"{st.session_state.selected_model} - Chat {len(st.session_state.sessions) + 1}"
-            st.session_state.sessions[new_session_name] = []  # Initialize an empty chat history for this session
-            st.session_state.current_session = new_session_name
-            st.session_state.chat_history = []
 
         # Sidebar for uploading documents
         st.subheader("Your documents")
@@ -235,6 +191,7 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.info("No chat history yet. Start by asking a question!")
+
 
 if __name__ == "__main__":
     main()
