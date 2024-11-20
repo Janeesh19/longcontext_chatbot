@@ -188,4 +188,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-remove the context adding here and make me a pdf adder in ui where i can add a pdf for context and it should use that only to answer my question
