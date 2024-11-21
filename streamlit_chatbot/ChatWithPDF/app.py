@@ -160,7 +160,7 @@ def main():
             "Ask your question:",
             value=st.session_state.user_input,
             key="dynamic_user_input",
-            placeholder="Type your question and press send."
+            placeholder="Type your question and click send."
         )
     with col1:
         if st.button("send"):  # Using an arrow symbol for the send button
