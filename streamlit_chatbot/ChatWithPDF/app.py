@@ -162,8 +162,8 @@ def main():
             key="dynamic_user_input",
             placeholder="Type your question and press Enter..."
         )
-    with col2:
-        if st.button("↵"):  # Using an arrow symbol for the send button
+    with col1:
+        if st.button("send"):  # Using an arrow symbol for the send button
             if user_input.strip():
                 if not st.session_state.pdf_chunks:
                     st.error("Please upload and process a PDF before asking questions.")
