@@ -5,50 +5,45 @@ from langchain.chains import ConversationChain
 from langchain.chat_models import ChatOpenAI
 from PyPDF2 import PdfReader
 
+
 # Securely load OpenAI API key
 openai_api_key = st.secrets["OPENAI_API_KEY"]  # Replace with your OpenAI API key
 
-# Function to extract text from uploaded PDF
-def extract_pdf_text(pdf_files):
-    text = ""
-    for pdf in pdf_files:
-        reader = PdfReader(pdf)
-        for page in reader.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text += page_text
-    if not text.strip():
-        st.warning("No readable text was found in the uploaded PDF.")
-    return text
+# Sales coach prompt template
+system_prompt = """
+Act as an expert sales coach. Your job is to answer queries from sales agents to help them sell Hyundai Creta only. 
+Use the following 7-step framework to guide your responses:
+
+1. Identify the genuine problems or needs the vehicle meets for customers.
+2. Acknowledge other competitive vehicles customers may be considering.
+3. Describe how the Hyundai Creta ideally improves customers' lives.
+4. Present yourself as a trusted advisor aiming to match the right vehicle to each customer.
+5. Explain the main benefits and value the Hyundai Creta provides.
+6. Provide transparent evidence to back up claims about the vehicle's features.
+7. Offer next steps for interested customers to learn more or test drive.
+
+Never recommend any other car other than Hyundai Creta.
+If you do not know the answer to a question, simply state so. 
+Focus on being helpful, honest, and customer-oriented in crafting sales coaching advice.
+"""
 
 # ChatPromptTemplate configuration
-def create_prompt(context):
-    system_prompt = """
-    Act as an expert sales coach. Your job is to answer queries from sales agents to help them sell Hyundai Creta only. 
-    Use the following 7-step framework to guide your responses:
-
-    1. Identify the genuine problems or needs the vehicle meets for customers.
-    2. Acknowledge other competitive vehicles customers may be considering.
-    3. Describe how the Hyundai Creta ideally improves customers' lives.
-    4. Present yourself as a trusted advisor aiming to match the right vehicle to each customer.
-    5. Explain the main benefits and value the Hyundai Creta provides.
-    6. Provide transparent evidence to back up claims about the vehicle's features.
-    7. Offer next steps for interested customers to learn more or test drive.
-
-    Never recommend any other car other than Hyundai Creta.
-    If you do not know the answer to a question, simply state so. 
-    Focus on being helpful, honest, and customer-oriented in crafting sales coaching advice.
-    """
+def create_prompt_with_context(pdf_text):
     return ChatPromptTemplate.from_messages([
-        SystemMessagePromptTemplate.from_template(system_prompt),
-        SystemMessagePromptTemplate.from_template(context),
+        SystemMessagePromptTemplate.from_template(system_prompt + "\n" + pdf_text),
         MessagesPlaceholder(variable_name="history"),
         HumanMessagePromptTemplate.from_template("{input}")
     ])
 
-# Chat model and memory
-llm = ChatOpenAI(api_key=openai_api_key, model_name="gpt-3.5-turbo", temperature=0.7)
-memory = ConversationBufferMemory(return_messages=True, memory_key="history")
+# Helper function to process PDF and extract text
+def process_pdf(file):
+    pdf_reader = PdfReader(file)
+    text = ""
+    for page in pdf_reader.pages:
+        page_text = page.extract_text()
+        if page_text:
+            text += page_text
+    return text
 
 # Main Streamlit application
 def main():
@@ -92,6 +87,8 @@ def main():
     """, unsafe_allow_html=True)
 
     # Initialize session states
+    if "pdf_text" not in st.session_state:
+        st.session_state.pdf_text = ""
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
@@ -105,8 +102,26 @@ def main():
 
     st.header("Chat with Sales Coach 🚗")
 
-    # Sidebar for sessions and document upload
+    # Sidebar for uploading PDFs and chat sessions
     with st.sidebar:
+        st.subheader("Upload Your Context")
+        uploaded_pdf = st.file_uploader("Upload your PDFs for context", type=["pdf"])
+        if st.button("Process PDFs") and uploaded_pdf:
+            try:
+                st.session_state.pdf_text = process_pdf(uploaded_pdf)
+                # Reset conversation with new context
+                prompt = create_prompt_with_context(st.session_state.pdf_text)
+                memory = ConversationBufferMemory(return_messages=True, memory_key="history")
+                st.session_state.conversation = ConversationChain(
+                    llm=ChatOpenAI(api_key=openai_api_key, model_name="gpt-3.5-turbo", temperature=0.7),
+                    memory=memory,
+                    prompt=prompt,
+                    verbose=True
+                )
+                st.success("PDF processed successfully and context updated!")
+            except Exception as e:
+                st.error(f"Failed to process PDF: {str(e)}")
+
         st.subheader("Chat Sessions")
 
         # List all existing sessions
@@ -122,7 +137,7 @@ def main():
                     if session_name == st.session_state.current_session:
                         st.session_state.current_session = None
                         st.session_state.chat_history = []
-                    st.rerun()
+                    st.rerun()  # Force an immediate rerun to update the UI
 
         # Button to create a new session
         if st.button("New Chat"):
@@ -130,23 +145,6 @@ def main():
             st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
             st.session_state.current_session = new_session_name
             st.session_state.chat_history = []
-
-        # Document upload for context
-        st.subheader("Upload Your Context")
-        pdf_files = st.file_uploader("Upload your PDFs for context", accept_multiple_files=True)
-        if st.button("Process PDFs"):
-            if pdf_files:
-                raw_text = extract_pdf_text(pdf_files)
-                if raw_text.strip():
-                    st.session_state.conversation = ConversationChain(
-                        llm=llm,
-                        memory=memory,
-                        prompt=create_prompt(raw_text),
-                        verbose=True
-                    )
-                    st.success("Context uploaded and processed successfully!")
-                else:
-                    st.error("The uploaded PDFs did not contain any readable content.")
 
     # Input box for user's question
     col1, col2 = st.columns([4, 1])
@@ -161,14 +159,18 @@ def main():
 
     if send_button:
         if user_input.strip():
-            if st.session_state.conversation:
-                response = st.session_state.conversation.run({"input": user_input})
-                st.session_state.chat_history.append({"role": "user", "content": user_input})
-                st.session_state.chat_history.append({"role": "assistant", "content": response})
-                st.session_state.user_input = ""
-                st.rerun()
+            if not st.session_state.pdf_text:
+                st.error("Please upload and process a PDF before asking questions.")
             else:
-                st.error("Please upload a PDF to set the context before asking questions.")
+                # Run the conversation
+                try:
+                    response = st.session_state.conversation.run(user_input)
+                    st.session_state.chat_history.append({"role": "user", "content": user_input})
+                    st.session_state.chat_history.append({"role": "assistant", "content": response})
+                    st.session_state.user_input = ""
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"An error occurred: {str(e)}")
         else:
             st.warning("Please enter a valid question.")
 
