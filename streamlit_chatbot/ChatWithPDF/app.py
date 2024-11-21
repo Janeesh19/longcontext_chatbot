@@ -26,7 +26,7 @@ If you do not know the answer to a question, simply state so.
 Focus on being helpful, honest, and customer-oriented in crafting sales coaching advice.
 """
 
-# Helper function to process PDF and split text into chunks
+# Helper function to process PDF files
 def process_pdf(file):
     pdf_reader = PdfReader(file)
     text = ""
@@ -36,6 +36,11 @@ def process_pdf(file):
             text += page_text
     return text
 
+# Helper function to process text files
+def process_text(file):
+    return file.read().decode("utf-8")  # Decode file to a string
+
+# Function to split text into chunks
 def split_into_chunks(text, chunk_size=2000, overlap=200):
     words = text.split()
     chunks = []
@@ -109,14 +114,24 @@ def main():
 
     st.header("Chat with Sales Coach 🚗")
 
-    # Sidebar for uploading PDFs and chat sessions
+    # Sidebar for uploading files and chat sessions
     with st.sidebar:
         st.subheader("Upload Your Context")
-        uploaded_pdf = st.file_uploader("Upload your PDFs for context", type=["pdf"])
-        if st.button("Process PDFs") and uploaded_pdf:
+        uploaded_file = st.file_uploader("Upload your files (PDF or TXT)", type=["pdf", "txt"])
+        if st.button("Process File") and uploaded_file:
             try:
-                raw_text = process_pdf(uploaded_pdf)
+                # Check file type and process accordingly
+                if uploaded_file.name.endswith(".pdf"):
+                    raw_text = process_pdf(uploaded_file)
+                elif uploaded_file.name.endswith(".txt"):
+                    raw_text = process_text(uploaded_file)
+                else:
+                    st.error("Unsupported file type. Please upload a PDF or TXT file.")
+                    return
+                
+                # Process text into chunks
                 st.session_state.pdf_chunks = split_into_chunks(raw_text)
+                
                 # Reset conversation with the first chunk of the context
                 prompt = create_prompt_with_context(st.session_state.pdf_chunks)
                 memory = ConversationBufferMemory(return_messages=True, memory_key="history")
@@ -126,9 +141,9 @@ def main():
                     prompt=prompt,
                     verbose=True
                 )
-                st.success("PDF processed successfully and context updated!")
+                st.success("File processed successfully and context updated!")
             except Exception as e:
-                st.error(f"Failed to process PDF: {str(e)}")
+                st.error(f"Failed to process file: {str(e)}")
 
         st.subheader("Chat Sessions")
         # List all existing sessions
@@ -162,11 +177,11 @@ def main():
             key="dynamic_user_input",
             placeholder="Type your question and click send."
         )
-    with col1:
-        if st.button("send"):  # Using an arrow symbol for the send button
+    with col2:
+        if st.button("Send"):
             if user_input.strip():
                 if not st.session_state.pdf_chunks:
-                    st.error("Please upload and process a PDF before asking questions.")
+                    st.error("Please upload and process a file before asking questions.")
                 else:
                     try:
                         response = st.session_state.conversation.run({"input": user_input})
@@ -179,6 +194,14 @@ def main():
             else:
                 st.warning("Please enter a valid question.")
 
+    # Clear Chat Button
+    if st.button("Clear Chat"):
+        if st.session_state.chat_history:
+            new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
+            st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
+        st.session_state.chat_history = []
+        st.session_state.user_input = ""
+        st.rerun()
 
     # Display chat history
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
@@ -188,15 +211,6 @@ def main():
         else:
             st.markdown(f'<div class="assistant-message">{message["content"]}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
-
-# Clear Chat Button
-    if st.button("Clear Chat"):
-        if st.session_state.chat_history:
-            new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
-            st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
-        st.session_state.chat_history = []
-        st.session_state.user_input = ""
-        st.rerun()
 
 if __name__ == "__main__":
     main()
