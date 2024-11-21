@@ -177,7 +177,7 @@ def main():
             key="dynamic_user_input",
             placeholder="Type your question and click send."
         )
-    with col1:
+    with col3:
         if st.button("Send"):
             if user_input.strip():
                 if not st.session_state.pdf_chunks:
