@@ -162,7 +162,7 @@ def main():
             key="dynamic_user_input",
             placeholder="Type your question and press Enter..."
         )
-    with col1:
+    with co14:
         if st.button("send"):  # Using an arrow symbol for the send button
             if user_input.strip():
                 if not st.session_state.pdf_chunks:
