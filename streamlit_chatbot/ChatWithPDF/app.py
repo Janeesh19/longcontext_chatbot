@@ -177,7 +177,7 @@ def main():
             key="dynamic_user_input",
             placeholder="Type your question and click send."
         )
-    with col2:
+    with col1:
         if st.button("Send"):
             if user_input.strip():
                 if not st.session_state.pdf_chunks:
@@ -194,15 +194,6 @@ def main():
             else:
                 st.warning("Please enter a valid question.")
 
-    # Clear Chat Button
-    if st.button("Clear Chat"):
-        if st.session_state.chat_history:
-            new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
-            st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
-        st.session_state.chat_history = []
-        st.session_state.user_input = ""
-        st.rerun()
-
     # Display chat history
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
     for message in st.session_state.chat_history:
@@ -211,6 +202,15 @@ def main():
         else:
             st.markdown(f'<div class="assistant-message">{message["content"]}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
+
+# Clear Chat Button
+    if st.button("Clear Chat"):
+        if st.session_state.chat_history:
+            new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
+            st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
+        st.session_state.chat_history = []
+        st.session_state.user_input = ""
+        st.rerun()
 
 if __name__ == "__main__":
     main()
