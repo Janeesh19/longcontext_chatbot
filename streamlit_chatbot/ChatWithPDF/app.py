@@ -154,31 +154,28 @@ def main():
             st.session_state.chat_history = []
 
     # Input box for user's question
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        user_input = st.text_input(
-            "Ask your question:",
-            value=st.session_state.user_input,
-            key="dynamic_user_input"
+    user_input = st.text_input(
+        "Ask your question:",
+        value=st.session_state.user_input,
+        key="dynamic_user_input",
+        on_change=lambda: st.session_state.conversation.run(
+            {"input": st.session_state.user_input}
         )
-    with col2:
-        send_button = st.button("Send")
+    )
+    st.markdown('<button class="up-arrow-button">↑</button>', unsafe_allow_html=True)
 
-    if send_button:
-        if user_input.strip():
-            if not st.session_state.pdf_chunks:
-                st.error("Please upload and process a PDF before asking questions.")
-            else:
-                try:
-                    response = st.session_state.conversation.run({"input": user_input})
-                    st.session_state.chat_history.append({"role": "user", "content": user_input})
-                    st.session_state.chat_history.append({"role": "assistant", "content": response})
-                    st.session_state.user_input = ""
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"An error occurred: {str(e)}")
+    if user_input.strip():
+        if not st.session_state.pdf_chunks:
+            st.error("Please upload and process a PDF before asking questions.")
         else:
-            st.warning("Please enter a valid question.")
+            try:
+                response = st.session_state.conversation.run({"input": user_input})
+                st.session_state.chat_history.append({"role": "user", "content": user_input})
+                st.session_state.chat_history.append({"role": "assistant", "content": response})
+                st.session_state.user_input = ""
+                st.rerun()
+            except Exception as e:
+                st.error(f"An error occurred: {str(e)}")
 
     # Clear Chat Button
     clear_chat = st.button("Clear Chat")
