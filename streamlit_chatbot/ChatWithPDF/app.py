@@ -5,7 +5,6 @@ from langchain.chains import ConversationChain
 from langchain.chat_models import ChatOpenAI
 from PyPDF2 import PdfReader
 
-
 # Securely load OpenAI API key
 openai_api_key = st.secrets["OPENAI_API_KEY"]  # Replace with your OpenAI API key
 
@@ -27,15 +26,7 @@ If you do not know the answer to a question, simply state so.
 Focus on being helpful, honest, and customer-oriented in crafting sales coaching advice.
 """
 
-# ChatPromptTemplate configuration
-def create_prompt_with_context(pdf_text):
-    return ChatPromptTemplate.from_messages([
-        SystemMessagePromptTemplate.from_template(system_prompt + "\n" + pdf_text),
-        MessagesPlaceholder(variable_name="history"),
-        HumanMessagePromptTemplate.from_template("{input}")
-    ])
-
-# Helper function to process PDF and extract text
+# Helper function to process PDF and split text into chunks
 def process_pdf(file):
     pdf_reader = PdfReader(file)
     text = ""
@@ -44,6 +35,22 @@ def process_pdf(file):
         if page_text:
             text += page_text
     return text
+
+def split_into_chunks(text, chunk_size=2000, overlap=200):
+    words = text.split()
+    chunks = []
+    for i in range(0, len(words), chunk_size - overlap):
+        chunk = " ".join(words[i:i + chunk_size])
+        chunks.append(chunk)
+    return chunks
+
+# ChatPromptTemplate configuration
+def create_prompt_with_context(pdf_chunks):
+    return ChatPromptTemplate.from_messages([
+        SystemMessagePromptTemplate.from_template(system_prompt + "\n" + pdf_chunks[0]),
+        MessagesPlaceholder(variable_name="history"),
+        HumanMessagePromptTemplate.from_template("{input}")
+    ])
 
 # Main Streamlit application
 def main():
@@ -87,8 +94,8 @@ def main():
     """, unsafe_allow_html=True)
 
     # Initialize session states
-    if "pdf_text" not in st.session_state:
-        st.session_state.pdf_text = ""
+    if "pdf_chunks" not in st.session_state:
+        st.session_state.pdf_chunks = []
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
@@ -108,9 +115,10 @@ def main():
         uploaded_pdf = st.file_uploader("Upload your PDFs for context", type=["pdf"])
         if st.button("Process PDFs") and uploaded_pdf:
             try:
-                st.session_state.pdf_text = process_pdf(uploaded_pdf)
-                # Reset conversation with new context
-                prompt = create_prompt_with_context(st.session_state.pdf_text)
+                raw_text = process_pdf(uploaded_pdf)
+                st.session_state.pdf_chunks = split_into_chunks(raw_text)
+                # Reset conversation with the first chunk of the context
+                prompt = create_prompt_with_context(st.session_state.pdf_chunks)
                 memory = ConversationBufferMemory(return_messages=True, memory_key="history")
                 st.session_state.conversation = ConversationChain(
                     llm=ChatOpenAI(api_key=openai_api_key, model_name="gpt-3.5-turbo", temperature=0.7),
@@ -123,10 +131,9 @@ def main():
                 st.error(f"Failed to process PDF: {str(e)}")
 
         st.subheader("Chat Sessions")
-
         # List all existing sessions
         for session_name in list(st.session_state.sessions.keys()):
-            col1, col2 = st.columns([3, 1])  # Add a button next to each session name
+            col1, col2 = st.columns([3, 1])
             with col1:
                 if st.button(session_name):  # Load a session when clicked
                     st.session_state.current_session = session_name
@@ -137,7 +144,7 @@ def main():
                     if session_name == st.session_state.current_session:
                         st.session_state.current_session = None
                         st.session_state.chat_history = []
-                    st.rerun()  # Force an immediate rerun to update the UI
+                    st.rerun()
 
         # Button to create a new session
         if st.button("New Chat"):
@@ -159,12 +166,11 @@ def main():
 
     if send_button:
         if user_input.strip():
-            if not st.session_state.pdf_text:
+            if not st.session_state.pdf_chunks:
                 st.error("Please upload and process a PDF before asking questions.")
             else:
-                # Run the conversation
                 try:
-                    response = st.session_state.conversation.run(user_input)
+                    response = st.session_state.conversation.run({"input": user_input})
                     st.session_state.chat_history.append({"role": "user", "content": user_input})
                     st.session_state.chat_history.append({"role": "assistant", "content": response})
                     st.session_state.user_input = ""
@@ -174,7 +180,7 @@ def main():
         else:
             st.warning("Please enter a valid question.")
 
-    # Add a Clear Chat button
+    # Clear Chat Button
     clear_chat = st.button("Clear Chat")
     if clear_chat:
         if st.session_state.chat_history:
