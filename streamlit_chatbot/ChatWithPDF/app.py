@@ -90,19 +90,6 @@ def main():
             flex-direction: column;
             gap: 10px; /* Space between messages in the container */
         }
-        .input-container {
-            display: flex;
-            align-items: center;
-            gap: 10px; /* Space between input box and button */
-        }
-        .send-button {
-            padding: 0.5em 1em;
-            background-color: #007BFF; /* Bootstrap primary button color */
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -166,32 +153,34 @@ def main():
             st.session_state.current_session = new_session_name
             st.session_state.chat_history = []
 
-    # Input box and Send button container
-    st.markdown('<div class="input-container">', unsafe_allow_html=True)
-    user_input = st.text_input(
-        "Ask your question:",
-        value=st.session_state.user_input,
-        key="dynamic_user_input"
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # Process input on pressing Enter or clicking Send
-    if st.session_state.user_input.strip():
-        if not st.session_state.pdf_chunks:
-            st.error("Please upload and process a PDF before asking questions.")
-        else:
-            try:
-                response = st.session_state.conversation.run({"input": st.session_state.user_input})
-                st.session_state.chat_history.append({"role": "user", "content": st.session_state.user_input})
-                st.session_state.chat_history.append({"role": "assistant", "content": response})
-                st.session_state.user_input = ""
-                st.rerun()
-            except Exception as e:
-                st.error(f"An error occurred: {str(e)}")
+    # Input box for user's question
+    col1, col2 = st.columns([9, 1])  # Adjusted column proportions for alignment
+    with col1:
+        user_input = st.text_input(
+            "Ask your question:",
+            value=st.session_state.user_input,
+            key="dynamic_user_input",
+            placeholder="Type your question and press Enter..."
+        )
+    with col2:
+        if st.button("↵"):  # Using an arrow symbol for the send button
+            if user_input.strip():
+                if not st.session_state.pdf_chunks:
+                    st.error("Please upload and process a PDF before asking questions.")
+                else:
+                    try:
+                        response = st.session_state.conversation.run({"input": user_input})
+                        st.session_state.chat_history.append({"role": "user", "content": user_input})
+                        st.session_state.chat_history.append({"role": "assistant", "content": response})
+                        st.session_state.user_input = ""
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"An error occurred: {str(e)}")
+            else:
+                st.warning("Please enter a valid question.")
 
     # Clear Chat Button
-    clear_chat = st.button("Clear Chat")
-    if clear_chat:
+    if st.button("Clear Chat"):
         if st.session_state.chat_history:
             new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
             st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
