@@ -118,7 +118,7 @@ def main():
     with st.sidebar:
         st.subheader("Upload Your Context")
         uploaded_file = st.file_uploader("Upload your files (PDF or TXT)", type=["pdf", "txt"])
-        if st.button("Process File") and uploaded_file:
+        if st.button("Add File") and uploaded_file:
             try:
                 # Check file type and process accordingly
                 if uploaded_file.name.endswith(".pdf"):
