@@ -114,20 +114,18 @@ def main():
 
     # Function to handle the user input execution
     def execute_user_input():
-        if st.session_state.dynamic_user_input.strip():
-            user_input = st.session_state.dynamic_user_input.strip()
-            if not st.session_state.pdf_chunks:
-                st.error("Please upload and process a file before asking questions.")
-            else:
-                try:
-                    response = st.session_state.conversation.run({"input": user_input})
-                    st.session_state.chat_history.insert(0, {"role": "assistant", "content": response})
-                    st.session_state.chat_history.insert(0, {"role": "user", "content": user_input})
-                    st.session_state.user_input = ""
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"An error occurred: {str(e)}")
-
+     user_input = st.session_state.dynamic_user_input.strip()
+     if user_input:
+        if not st.session_state.pdf_chunks:
+            st.error("Please upload and process a file before asking questions.")
+        else:
+            try:
+                response = st.session_state.conversation.run({"input": user_input})
+                st.session_state.chat_history.insert(0, {"role": "assistant", "content": response})
+                st.session_state.chat_history.insert(0, {"role": "user", "content": user_input})
+                st.session_state.dynamic_user_input = ""  # Clear the input box
+            except Exception as e:
+                st.error(f"An error occurred: {str(e)}")
     # Function to clear the chat
     def clear_chat():
         if st.session_state.chat_history:
@@ -194,16 +192,16 @@ def main():
             st.session_state.chat_history = []
 
     # Input box for user's question
-    col1, col2 = st.columns([9, 1])  # Adjusted column proportions for alignment
-    with col1:
-        user_input = st.text_input(
-            "Ask your question:",
-            value=st.session_state.user_input,
-            key="dynamic_user_input",
-            placeholder="Type your question and press Enter.",
-            on_change=execute_user_input
+    col1, col2 = st.columns([9, 1])
+     with col1:
+       st.text_input(
+        "Ask your question:",
+        value=st.session_state.user_input,
+        key="dynamic_user_input",
+        placeholder="Type your question and press Enter.",
+        on_change=execute_user_input,  # Directly handle input
         )
-    with col2:
+    with col1:
         if st.button("Clear Chat"):
             clear_chat()
 
