@@ -57,6 +57,25 @@ def create_prompt_with_context(pdf_chunks):
         HumanMessagePromptTemplate.from_template("{input}")
     ])
 
+# Function to handle query execution
+def execute_query():
+    user_input = st.session_state.user_input.strip()
+    if user_input:
+        if not st.session_state.pdf_chunks:
+            st.error("Please upload and process a file before asking questions.")
+        else:
+            try:
+                response = st.session_state.conversation.run({"input": user_input})
+                st.session_state.chat_history.append({"role": "user", "content": user_input})
+                st.session_state.chat_history.append({"role": "assistant", "content": response})
+                st.session_state.recent_qa = (user_input, response)
+                st.session_state.user_input = ""
+                st.experimental_rerun()
+            except Exception as e:
+                st.error(f"An error occurred: {str(e)}")
+    else:
+        st.warning("Please enter a valid question.")
+
 # Main Streamlit application
 def main():
     st.set_page_config(page_title="Chat with Sales Coach 🚗", page_icon="🚗")
@@ -65,7 +84,7 @@ def main():
     st.markdown("""
         <style>
         .user-message {
-            background-color: #FFFFFF; /* White background for user messages */
+            background-color: #FFFFFF;
             padding: 8px 12px;
             border-radius: 12px;
             text-align: left;
@@ -78,7 +97,7 @@ def main():
             box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
         }
         .assistant-message {
-            background-color: #D6EAF8; /* Light Blue background for assistant messages */
+            background-color: #D6EAF8;
             padding: 8px 12px;
             border-radius: 12px;
             text-align: left;
@@ -107,10 +126,12 @@ def main():
         st.session_state.chat_history = []
     if "recent_qa" not in st.session_state:
         st.session_state.recent_qa = None
+    if "user_input" not in st.session_state:
+        st.session_state.user_input = ""
 
     st.header("Chat with Sales Coach 🚗")
 
-    # Sidebar for uploading files
+    # Sidebar for uploading files and chat sessions
     with st.sidebar:
         st.subheader("Upload Your Context")
         uploaded_file = st.file_uploader("Upload your files (PDF or TXT)", type=["pdf", "txt"])
@@ -141,33 +162,21 @@ def main():
             except Exception as e:
                 st.error(f"Failed to process file: {str(e)}")
 
-    # Input box for user's question
-    col1, col2 = st.columns([9, 1])
-    with col1:
-        user_input = st.text_input(
-            "Ask your question:",
-            value="",
-            key="user_input",
-            on_change=lambda: execute_query(user_input),
-            placeholder="Type your question and press Enter."
-        )
+        st.subheader("Chat Sessions")
+        if st.button("Clear Chat"):
+            st.session_state.chat_history = []
+            st.session_state.recent_qa = None
+            st.session_state.user_input = ""
+            st.experimental_rerun()
 
-    # Function to handle query execution
-    def execute_query(query):
-        if query.strip():
-            if not st.session_state.pdf_chunks:
-                st.error("Please upload and process a file before asking questions.")
-            else:
-                try:
-                    response = st.session_state.conversation.run({"input": query})
-                    st.session_state.chat_history.append({"role": "user", "content": query})
-                    st.session_state.chat_history.append({"role": "assistant", "content": response})
-                    st.session_state.recent_qa = (query, response)
-                    st.experimental_rerun()
-                except Exception as e:
-                    st.error(f"An error occurred: {str(e)}")
-        else:
-            st.warning("Please enter a valid question.")
+    # Input box for user's question
+    st.text_input(
+        "Ask your question:",
+        value=st.session_state.user_input,
+        key="user_input",
+        on_change=execute_query,
+        placeholder="Type your question and press Enter."
+    )
 
     # Display recent Q&A
     if st.session_state.recent_qa:
