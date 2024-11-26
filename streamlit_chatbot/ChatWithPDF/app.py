@@ -76,6 +76,13 @@ def execute_query():
     else:
         st.warning("Please enter a valid question.")
 
+# Function to start a new chat session
+def start_new_chat():
+    st.session_state.chat_history = []
+    st.session_state.recent_qa = None
+    st.session_state.user_input = ""
+    st.experimental_rerun()
+
 # Main Streamlit application
 def main():
     st.set_page_config(page_title="Chat with Sales Coach 🚗", page_icon="🚗")
@@ -131,7 +138,7 @@ def main():
 
     st.header("Chat with Sales Coach 🚗")
 
-    # Sidebar for uploading files and chat sessions
+    # Sidebar for uploading files and managing sessions
     with st.sidebar:
         st.subheader("Upload Your Context")
         uploaded_file = st.file_uploader("Upload your files (PDF or TXT)", type=["pdf", "txt"])
@@ -163,26 +170,29 @@ def main():
                 st.error(f"Failed to process file: {str(e)}")
 
         st.subheader("Chat Sessions")
-        if st.button("Clear Chat"):
-            st.session_state.chat_history = []
-            st.session_state.recent_qa = None
-            st.session_state.user_input = ""
-            st.experimental_rerun()
+        if st.button("New Chat"):
+            start_new_chat()
 
     # Input box for user's question
-    st.text_input(
-        "Ask your question:",
-        value=st.session_state.user_input,
-        key="user_input",
-        on_change=execute_query,
-        placeholder="Type your question and press Enter."
-    )
+    col1, col2 = st.columns([9, 1])  # Adjust column proportions
+    with col1:
+        st.text_input(
+            "Ask your question:",
+            value=st.session_state.user_input,
+            key="user_input",
+            on_change=execute_query,
+            placeholder="Type your question and press Enter."
+        )
+    with col2:
+        if st.button("Clear Chat"):
+            start_new_chat()
 
-    if st.button("Clear Chat"):
-            st.session_state.chat_history = []
-            st.session_state.recent_qa = None
-            st.session_state.user_input = ""
-            st.experimental_rerun()
+    # Display recent Q&A
+    if st.session_state.recent_qa:
+        st.subheader("Recent Q&A")
+        question, answer = st.session_state.recent_qa
+        st.markdown(f"**Q: {question}**")
+        st.markdown(f"**A: {answer}**")
 
     # Display chat history
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
