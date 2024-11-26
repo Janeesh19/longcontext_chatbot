@@ -96,8 +96,6 @@ def main():
             gap: 10px; /* Space between messages in the container */
         }
         .input-container {
-            position: sticky;
-            bottom: 0;
             background-color: #FFFFFF; /* White background */
             padding: 10px;
             box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); /* Shadow at the top of the input box */
@@ -112,10 +110,8 @@ def main():
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
-    if "sessions" not in st.session_state:
-        st.session_state.sessions = {}
-    if "current_session" not in st.session_state:
-        st.session_state.current_session = None
+    if "recent_message" not in st.session_state:
+        st.session_state.recent_message = None  # Track the most recent question/response
     if "user_input" not in st.session_state:
         st.session_state.user_input = ""
 
@@ -128,6 +124,10 @@ def main():
             else:
                 try:
                     response = st.session_state.conversation.run({"input": user_input})
+                    st.session_state.recent_message = {
+                        "user": user_input,
+                        "assistant": response
+                    }
                     st.session_state.chat_history.insert(0, {"role": "assistant", "content": response})
                     st.session_state.chat_history.insert(0, {"role": "user", "content": user_input})
                     st.session_state.dynamic_user_input = ""  # Clear the input box
@@ -137,6 +137,7 @@ def main():
     # Function to clear the chat
     def clear_chat():
         if st.session_state.chat_history:
+            st.session_state.recent_message = None
             new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
             st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
         st.session_state.chat_history = []
@@ -182,33 +183,30 @@ def main():
             col1, col2 = st.columns([3, 1])
             with col1:
                 if st.button(session_name):  # Load a session when clicked
-                    st.session_state.current_session = session_name
                     st.session_state.chat_history = st.session_state.sessions[session_name].copy()
             with col2:
                 if st.button("❌", key=f"delete_{session_name}"):  # Delete button
                     del st.session_state.sessions[session_name]
-                    if session_name == st.session_state.current_session:
-                        st.session_state.current_session = None
-                        st.session_state.chat_history = []
-                    st.rerun()
 
-        # Button to create a new session
         if st.button("New Chat"):
             new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
             st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
-            st.session_state.current_session = new_session_name
             st.session_state.chat_history = []
 
-    # Display chat history first
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-    for message in st.session_state.chat_history:  # Latest messages appear first
-        if message["role"] == "user":
-            st.markdown(f'<div class="user-message">👤 {message["content"]}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="assistant-message">🤖 {message["content"]}</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Display recent question/response above the input box
+    if st.session_state.recent_message:
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="user-message">👤 {st.session_state.recent_message["user"]}</div>',
+            unsafe_allow_html=True
+        )
+        st.markdown(
+            f'<div class="assistant-message">🤖 {st.session_state.recent_message["assistant"]}</div>',
+            unsafe_allow_html=True
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    # Input box placed below chat history
+    # Input box placed at the bottom
     with st.container():
         st.markdown('<div class="input-container">', unsafe_allow_html=True)
         st.text_input(
