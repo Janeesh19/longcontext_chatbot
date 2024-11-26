@@ -131,6 +131,18 @@ def main():
                     st.session_state.chat_history.append({"role": "user", "content": user_input})
                     st.session_state.chat_history.append({"role": "assistant", "content": response})
                     st.session_state.dynamic_user_input = ""  # Clear the input box
+
+                    # Add a placeholder to scroll to the latest response
+                    st.markdown("<div id='latest-response'></div>", unsafe_allow_html=True)
+                    st.markdown(
+                        """
+                        <script>
+                            var element = document.getElementById("latest-response");
+                            element.scrollIntoView({behavior: 'smooth'});
+                        </script>
+                        """,
+                        unsafe_allow_html=True,
+                    )
                 except Exception as e:
                     st.error(f"An error occurred: {str(e)}")
 
@@ -138,11 +150,9 @@ def main():
     def clear_chat():
         if st.session_state.chat_history:
             st.session_state.recent_message = None
-            new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
-            st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
-        st.session_state.chat_history = []
-        st.session_state.user_input = ""
-        st.rerun()
+            st.session_state.chat_history = []
+            st.session_state.user_input = ""
+            st.rerun()
 
     st.header("Chat with Sales Coach 🚗")
 
@@ -152,7 +162,6 @@ def main():
         uploaded_file = st.file_uploader("Upload your files (PDF or TXT)", type=["pdf", "txt"])
         if st.button("Add File") and uploaded_file:
             try:
-                # Check file type and process accordingly
                 if uploaded_file.name.endswith(".pdf"):
                     raw_text = process_pdf(uploaded_file)
                 elif uploaded_file.name.endswith(".txt"):
@@ -161,10 +170,7 @@ def main():
                     st.error("Unsupported file type. Please upload a PDF or TXT file.")
                     return
                 
-                # Process text into chunks
                 st.session_state.pdf_chunks = split_into_chunks(raw_text)
-                
-                # Reset conversation with the first chunk of the context
                 prompt = create_prompt_with_context(st.session_state.pdf_chunks)
                 memory = ConversationBufferMemory(return_messages=True, memory_key="history")
                 st.session_state.conversation = ConversationChain(
@@ -173,24 +179,11 @@ def main():
                     prompt=prompt,
                     verbose=True
                 )
-                st.success("File processed successfully and context updated!")
+                st.success("File processed successfully!")
             except Exception as e:
                 st.error(f"Failed to process file: {str(e)}")
 
-        st.subheader("Chat Sessions")
-        for session_name in list(st.session_state.sessions.keys()):
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                if st.button(session_name):
-                    st.session_state.chat_history = st.session_state.sessions[session_name].copy()
-            with col2:
-                if st.button("❌", key=f"delete_{session_name}"):
-                    del st.session_state.sessions[session_name]
-
-        if st.button("New Chat"):
-            st.session_state.chat_history = []
-
-    # Display chat history (older messages first)
+    # Display chat history
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
     for message in st.session_state.chat_history:
         if message["role"] == "user":
@@ -199,20 +192,7 @@ def main():
             st.markdown(f'<div class="assistant-message">🤖 {message["content"]}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Display the recent interaction above the input box
-    if st.session_state.recent_message:
-        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-        st.markdown(
-            f'<div class="user-message">👤 {st.session_state.recent_message["user"]}</div>',
-            unsafe_allow_html=True
-        )
-        st.markdown(
-            f'<div class="assistant-message">🤖 {st.session_state.recent_message["assistant"]}</div>',
-            unsafe_allow_html=True
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # Input box at the bottom
+    # Input box and Clear Chat button
     with st.container():
         st.text_input(
             "Ask your question:",
