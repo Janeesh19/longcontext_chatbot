@@ -69,31 +69,31 @@ def main():
             padding: 8px 12px;
             border-radius: 12px;
             text-align: left;
-            margin-left: auto; /* Push the message to the right */
+            margin-left: auto;
             margin-right: 10px;
-            margin-bottom: 10px; /* Add space below user message */
+            margin-bottom: 10px;
             max-width: 70%;
-            color: #000; /* Black text color */
+            color: #000;
             display: block;
-            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
         }
         .assistant-message {
             background-color: #D6EAF8; /* Light Blue background for assistant messages */
             padding: 8px 12px;
             border-radius: 12px;
             text-align: left;
-            margin-left: 10px; /* Push the message to the left */
+            margin-left: 10px;
             margin-right: auto;
-            margin-bottom: 15px; /* Add space below assistant message */
+            margin-bottom: 15px;
             max-width: 70%;
-            color: #000; /* Black text color */
+            color: #000;
             display: block;
-            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
         }
         .chat-container {
             display: flex;
             flex-direction: column;
-            gap: 10px; /* Space between messages in the container */
+            gap: 10px;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -105,16 +105,12 @@ def main():
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
-    if "sessions" not in st.session_state:
-        st.session_state.sessions = {}
-    if "current_session" not in st.session_state:
-        st.session_state.current_session = None
-    if "user_input" not in st.session_state:
-        st.session_state.user_input = ""
+    if "recent_qa" not in st.session_state:
+        st.session_state.recent_qa = None
 
     st.header("Chat with Sales Coach 🚗")
 
-    # Sidebar for uploading files and chat sessions
+    # Sidebar for uploading files
     with st.sidebar:
         st.subheader("Upload Your Context")
         uploaded_file = st.file_uploader("Upload your files (PDF or TXT)", type=["pdf", "txt"])
@@ -145,72 +141,49 @@ def main():
             except Exception as e:
                 st.error(f"Failed to process file: {str(e)}")
 
-        st.subheader("Chat Sessions")
-        # List all existing sessions
-        for session_name in list(st.session_state.sessions.keys()):
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                if st.button(session_name):  # Load a session when clicked
-                    st.session_state.current_session = session_name
-                    st.session_state.chat_history = st.session_state.sessions[session_name].copy()
-            with col2:
-                if st.button("❌", key=f"delete_{session_name}"):  # Delete button
-                    del st.session_state.sessions[session_name]
-                    if session_name == st.session_state.current_session:
-                        st.session_state.current_session = None
-                        st.session_state.chat_history = []
-                    st.rerun()
-
-        # Button to create a new session
-        if st.button("New Chat"):
-            new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
-            st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
-            st.session_state.current_session = new_session_name
-            st.session_state.chat_history = []
-
     # Input box for user's question
-    col1, col2 = st.columns([9, 1])  # Adjusted column proportions for alignment
+    col1, col2 = st.columns([9, 1])
     with col1:
         user_input = st.text_input(
             "Ask your question:",
-            value=st.session_state.user_input,
-            key="dynamic_user_input",
-            placeholder="Type your question and click send."
+            value="",
+            key="user_input",
+            on_change=lambda: execute_query(user_input),
+            placeholder="Type your question and press Enter."
         )
-    with col1:
-        if st.button("Send"):
-            if user_input.strip():
-                if not st.session_state.pdf_chunks:
-                    st.error("Please upload and process a file before asking questions.")
-                else:
-                    try:
-                        response = st.session_state.conversation.run({"input": user_input})
-                        st.session_state.chat_history.append({"role": "user", "content": user_input})
-                        st.session_state.chat_history.append({"role": "assistant", "content": response})
-                        st.session_state.user_input = ""
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"An error occurred: {str(e)}")
+
+    # Function to handle query execution
+    def execute_query(query):
+        if query.strip():
+            if not st.session_state.pdf_chunks:
+                st.error("Please upload and process a file before asking questions.")
             else:
-                st.warning("Please enter a valid question.")
+                try:
+                    response = st.session_state.conversation.run({"input": query})
+                    st.session_state.chat_history.append({"role": "user", "content": query})
+                    st.session_state.chat_history.append({"role": "assistant", "content": response})
+                    st.session_state.recent_qa = (query, response)
+                    st.experimental_rerun()
+                except Exception as e:
+                    st.error(f"An error occurred: {str(e)}")
+        else:
+            st.warning("Please enter a valid question.")
+
+    # Display recent Q&A
+    if st.session_state.recent_qa:
+        st.subheader("Recent Q&A")
+        question, answer = st.session_state.recent_qa
+        st.markdown(f"**Q: {question}**")
+        st.markdown(f"**A: {answer}**")
 
     # Display chat history
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
     for message in st.session_state.chat_history:
         if message["role"] == "user":
-            st.markdown(f'<div class="user-message">{message["content"]}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="user-message">👤 {message["content"]}</div>', unsafe_allow_html=True)
         else:
-            st.markdown(f'<div class="assistant-message">{message["content"]}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="assistant-message">🤖 {message["content"]}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
-
-# Clear Chat Button
-    if st.button("Clear Chat"):
-        if st.session_state.chat_history:
-            new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
-            st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
-        st.session_state.chat_history = []
-        st.session_state.user_input = ""
-        st.rerun()
 
 if __name__ == "__main__":
     main()
