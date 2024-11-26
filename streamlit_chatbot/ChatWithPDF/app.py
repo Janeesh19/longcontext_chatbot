@@ -178,12 +178,11 @@ def main():
         placeholder="Type your question and press Enter."
     )
 
-    # Display recent Q&A
-    if st.session_state.recent_qa:
-        st.subheader("Recent Q&A")
-        question, answer = st.session_state.recent_qa
-        st.markdown(f"**Q: {question}**")
-        st.markdown(f"**A: {answer}**")
+    if st.button("Clear Chat"):
+            st.session_state.chat_history = []
+            st.session_state.recent_qa = None
+            st.session_state.user_input = ""
+            st.experimental_rerun()
 
     # Display chat history
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
