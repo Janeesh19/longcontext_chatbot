@@ -128,6 +128,15 @@ def main():
                 except Exception as e:
                     st.error(f"An error occurred: {str(e)}")
 
+    # Function to clear the chat
+    def clear_chat():
+        if st.session_state.chat_history:
+            new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
+            st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
+        st.session_state.chat_history = []
+        st.session_state.user_input = ""
+        st.experimental_rerun()
+
     st.header("Chat with Sales Coach 🚗")
 
     # Sidebar for uploading files and chat sessions
@@ -194,19 +203,13 @@ def main():
             placeholder="Type your question and press Enter.",
             on_change=execute_user_input
         )
-
-    # Display recent question and answer below the input box
-    if len(st.session_state.chat_history) >= 2:
-        recent_question = st.session_state.chat_history[1]  # Most recent question
-        recent_answer = st.session_state.chat_history[0]  # Most recent answer
-
-        st.subheader("Recent Q&A")
-        st.markdown(f"**You (👤):** {recent_question['content']}")
-        st.markdown(f"**Assistant (🤖):** {recent_answer['content']}")
+    with col2:
+        if st.button("Clear Chat"):
+            clear_chat()
 
     # Display chat history
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-    for message in reversed(st.session_state.chat_history):  # Older messages move down
+    for message in reversed(st.session_state.chat_history):  # Newest messages appear at the top
         if message["role"] == "user":
             st.markdown(f'<div class="user-message">👤 {message["content"]}</div>', unsafe_allow_html=True)
         else:
