@@ -65,7 +65,7 @@ def main():
     st.markdown("""
         <style>
         .user-message {
-            background-color: #A8A8A8; /* White background for user messages */
+            background-color: #FFFFFF; /* White background for user messages */
             padding: 8px 12px;
             border-radius: 12px;
             text-align: left;
@@ -94,6 +94,13 @@ def main():
             display: flex;
             flex-direction: column;
             gap: 10px; /* Space between messages in the container */
+        }
+        .input-container {
+            position: sticky;
+            bottom: 0;
+            background-color: #FFFFFF; /* White background */
+            padding: 10px;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); /* Shadow at the top of the input box */
         }
         </style>
     """, unsafe_allow_html=True)
@@ -192,20 +199,7 @@ def main():
             st.session_state.current_session = new_session_name
             st.session_state.chat_history = []
 
-    # Input box for user's question
-    st.text_input(
-        "Ask your question:",
-        value=st.session_state.user_input,
-        key="dynamic_user_input",
-        placeholder="Type your question and press Enter.",
-        on_change=execute_user_input,  # Directly handle input
-    )
-
-    # Clear Chat button below the input box
-    if st.button("Clear Chat"):
-        clear_chat()
-
-    # Display chat history
+    # Display chat history first
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
     for message in st.session_state.chat_history:  # Latest messages appear first
         if message["role"] == "user":
@@ -213,6 +207,20 @@ def main():
         else:
             st.markdown(f'<div class="assistant-message">🤖 {message["content"]}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
+
+    # Input box placed below chat history
+    with st.container():
+        st.markdown('<div class="input-container">', unsafe_allow_html=True)
+        st.text_input(
+            "Ask your question:",
+            value=st.session_state.user_input,
+            key="dynamic_user_input",
+            placeholder="Type your question and press Enter.",
+            on_change=execute_user_input,  # Directly handle input
+        )
+        if st.button("Clear Chat"):
+            clear_chat()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
