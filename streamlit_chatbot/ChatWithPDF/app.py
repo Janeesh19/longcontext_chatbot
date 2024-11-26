@@ -193,18 +193,17 @@ def main():
             st.session_state.chat_history = []
 
     # Input box for user's question
-    col1, col2 = st.columns([9, 1])
-    with col1:
-        st.text_input(
-            "Ask your question:",
-            value=st.session_state.user_input,
-            key="dynamic_user_input",
-            placeholder="Type your question and press Enter.",
-            on_change=execute_user_input,  # Directly handle input
-        )
-    with col2:
-        if st.button("Clear Chat"):
-            clear_chat()
+    st.text_input(
+        "Ask your question:",
+        value=st.session_state.user_input,
+        key="dynamic_user_input",
+        placeholder="Type your question and press Enter.",
+        on_change=execute_user_input,  # Directly handle input
+    )
+
+    # Clear Chat button below the input box
+    if st.button("Clear Chat"):
+        clear_chat()
 
     # Display chat history
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
