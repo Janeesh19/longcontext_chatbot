@@ -121,10 +121,10 @@ def main():
             else:
                 try:
                     response = st.session_state.conversation.run({"input": user_input})
-                    st.session_state.chat_history.insert(0, {"role": "user", "content": user_input})
                     st.session_state.chat_history.insert(0, {"role": "assistant", "content": response})
+                    st.session_state.chat_history.insert(0, {"role": "user", "content": user_input})
                     st.session_state.user_input = ""
-                    st.experimental_rerun()
+                    st.rerun()
                 except Exception as e:
                     st.error(f"An error occurred: {str(e)}")
 
@@ -135,7 +135,7 @@ def main():
             st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
         st.session_state.chat_history = []
         st.session_state.user_input = ""
-        st.experimental_rerun()
+        st.rerun()
 
     st.header("Chat with Sales Coach 🚗")
 
@@ -209,7 +209,7 @@ def main():
 
     # Display chat history
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-    for message in reversed(st.session_state.chat_history):  # Newest messages appear at the top
+    for message in st.session_state.chat_history:  # Latest messages appear first
         if message["role"] == "user":
             st.markdown(f'<div class="user-message">👤 {message["content"]}</div>', unsafe_allow_html=True)
         else:
