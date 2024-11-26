@@ -128,8 +128,8 @@ def main():
                         "user": user_input,
                         "assistant": response
                     }
-                    st.session_state.chat_history.insert(0, {"role": "assistant", "content": response})
-                    st.session_state.chat_history.insert(0, {"role": "user", "content": user_input})
+                    st.session_state.chat_history.append({"role": "user", "content": user_input})
+                    st.session_state.chat_history.append({"role": "assistant", "content": response})
                     st.session_state.dynamic_user_input = ""  # Clear the input box
                 except Exception as e:
                     st.error(f"An error occurred: {str(e)}")
@@ -178,22 +178,28 @@ def main():
                 st.error(f"Failed to process file: {str(e)}")
 
         st.subheader("Chat Sessions")
-        # List all existing sessions
         for session_name in list(st.session_state.sessions.keys()):
             col1, col2 = st.columns([3, 1])
             with col1:
-                if st.button(session_name):  # Load a session when clicked
+                if st.button(session_name):
                     st.session_state.chat_history = st.session_state.sessions[session_name].copy()
             with col2:
-                if st.button("❌", key=f"delete_{session_name}"):  # Delete button
+                if st.button("❌", key=f"delete_{session_name}"):
                     del st.session_state.sessions[session_name]
 
         if st.button("New Chat"):
-            new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
-            st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
             st.session_state.chat_history = []
 
-    # Display recent question/response above the input box
+    # Display chat history (older messages first)
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+    for message in st.session_state.chat_history:
+        if message["role"] == "user":
+            st.markdown(f'<div class="user-message">👤 {message["content"]}</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="assistant-message">🤖 {message["content"]}</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Display the recent interaction above the input box
     if st.session_state.recent_message:
         st.markdown('<div class="chat-container">', unsafe_allow_html=True)
         st.markdown(
@@ -206,19 +212,17 @@ def main():
         )
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Input box placed at the bottom
+    # Input box at the bottom
     with st.container():
-        st.markdown('<div class="input-container">', unsafe_allow_html=True)
         st.text_input(
             "Ask your question:",
             value=st.session_state.user_input,
             key="dynamic_user_input",
             placeholder="Type your question and press Enter.",
-            on_change=execute_user_input,  # Directly handle input
+            on_change=execute_user_input,
         )
         if st.button("Clear Chat"):
             clear_chat()
-        st.markdown('</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
