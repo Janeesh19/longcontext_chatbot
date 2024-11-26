@@ -65,7 +65,7 @@ def main():
     st.markdown("""
         <style>
         .user-message {
-            background-color: #FFFFFF; /* White background for user messages */
+            background-color: #808080; /* White background for user messages */
             padding: 8px 12px;
             border-radius: 12px;
             text-align: left;
