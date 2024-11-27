@@ -110,8 +110,12 @@ def main():
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
+    if "sessions" not in st.session_state:
+        st.session_state.sessions = {}
     if "recent_message" not in st.session_state:
         st.session_state.recent_message = None  # Track the most recent question/response
+    if "current_session" not in st.session_state:
+        st.session_state.current_session = None
     if "user_input" not in st.session_state:
         st.session_state.user_input = ""
 
@@ -132,17 +136,6 @@ def main():
                     st.session_state.chat_history.append({"role": "assistant", "content": response})
                     st.session_state.dynamic_user_input = ""  # Clear the input box
 
-                    # Add a placeholder to scroll to the latest response
-                    st.markdown("<div id='latest-response'></div>", unsafe_allow_html=True)
-                    st.markdown(
-                        """
-                        <script>
-                            var element = document.getElementById("latest-response");
-                            element.scrollIntoView({behavior: 'smooth'});
-                        </script>
-                        """,
-                        unsafe_allow_html=True,
-                    )
                 except Exception as e:
                     st.error(f"An error occurred: {str(e)}")
 
@@ -150,9 +143,11 @@ def main():
     def clear_chat():
         if st.session_state.chat_history:
             st.session_state.recent_message = None
-            st.session_state.chat_history = []
-            st.session_state.user_input = ""
-            st.rerun()
+            new_session_name = f"Chat {len(st.session_state.sessions) + 1}"
+            st.session_state.sessions[new_session_name] = st.session_state.chat_history.copy()
+        st.session_state.chat_history = []
+        st.session_state.user_input = ""
+        st.rerun()
 
     st.header("Chat with Sales Coach 🚗")
 
@@ -182,6 +177,21 @@ def main():
                 st.success("File processed successfully!")
             except Exception as e:
                 st.error(f"Failed to process file: {str(e)}")
+
+        # Chat sessions
+        st.subheader("Chat Sessions")
+        for session_name in list(st.session_state.sessions.keys()):
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                if st.button(session_name):
+                    st.session_state.current_session = session_name
+                    st.session_state.chat_history = st.session_state.sessions[session_name].copy()
+            with col2:
+                if st.button("❌", key=f"delete_{session_name}"):
+                    del st.session_state.sessions[session_name]
+
+        if st.button("New Chat"):
+            st.session_state.chat_history = []
 
     # Display chat history
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
